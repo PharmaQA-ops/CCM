@@ -413,41 +413,176 @@
                 </div>
 
 
-                <!-- RECENT CERTIFICATIONS -->
-                <div class="panel">
+               <!-- =========================================================
+     CERTIFICATION OVERVIEW — STEP 11E
+========================================================= -->
 
-                    <div class="panel-header">
+<div class="panel certification-overview-panel">
 
-                        <div>
-                            <h2>Certification Overview</h2>
-                            <span>Latest certification records</span>
-                        </div>
+    <div class="panel-header">
 
-                        <button class="text-button">
-                            View All →
-                        </button>
+        <div>
+            <h2>Certification Overview</h2>
 
-                    </div>
+            <span>
+                Live certification records
+            </span>
+        </div>
 
-                    <div class="empty-state">
+        <div class="overview-actions">
 
-                        <div class="empty-icon">
-                            ▣
-                        </div>
+            <button
+                class="text-button"
+                id="refreshCertificatesButton"
+                type="button"
+            >
+                Refresh ↻
+            </button>
 
-                        <h3>Certification data will appear here</h3>
+            <button
+                class="text-button"
+                id="viewAllCertificatesButton"
+                type="button"
+            >
+                View All →
+            </button>
 
-                        <p>
-                            The CCM dashboard will load live certification
-                            records after API integration.
-                        </p>
+        </div>
 
-                    </div>
+    </div>
 
-                </div>
 
-            </div>
+    <!-- FILTER BAR -->
 
+    <div class="certificate-filter-bar">
+
+        <div class="certificate-search">
+
+            <input
+                type="search"
+                id="certificateSearch"
+                placeholder="Search certificate, employee or certification..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <select
+            id="certificateStatusFilter"
+        >
+
+            <option value="">
+                All Status
+            </option>
+
+            <option value="ACTIVE">
+                Active
+            </option>
+
+            <option value="EXPIRED">
+                Expired
+            </option>
+
+        </select>
+
+
+        <select
+            id="certificateDepartmentFilter"
+        >
+
+            <option value="">
+                All Departments
+            </option>
+
+        </select>
+
+    </div>
+
+
+    <!-- RECORD COUNT -->
+
+    <div
+        class="certificate-result-summary"
+        id="certificateResultSummary"
+    >
+        Loading certification records...
+    </div>
+
+
+    <!-- TABLE -->
+
+    <div class="certificate-table-wrapper">
+
+        <table class="certificate-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Certificate
+                    </th>
+
+                    <th>
+                        Employee
+                    </th>
+
+                    <th>
+                        Certification
+                    </th>
+
+                    <th>
+                        Department
+                    </th>
+
+                    <th>
+                        Issue Date
+                    </th>
+
+                    <th>
+                        Expiry Date
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Renewal
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody
+                id="certificateTableBody"
+            >
+
+                <tr>
+
+                    <td
+                        colspan="9"
+                        class="table-loading"
+                    >
+                        Loading certification records...
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
 
             <!-- OTHER PAGES -->
             <div class="page" id="certificationsPage">
