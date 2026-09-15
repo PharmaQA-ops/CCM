@@ -1,306 +1,331 @@
-const CCM_API =
-    "https://script.google.com/macros/s/AKfycbyzpJ6vSFQvZXLVxOEpLFuIpB8oQnegtHpKJaSWZll0gQkX6K5FjFAt4W3ugbRYjQOafw/exec";
+/* =========================================================
+   CCM — STEP 11C
+   GOOGLE WORKSPACE AUTHENTICATION
+========================================================= */
 
 
-document.addEventListener("DOMContentLoaded", () => {
+/*
+   IMPORTANT:
+   Replace this with your Google OAuth 2.0
+   Web Application Client ID.
+*/
+
+const GOOGLE_CLIENT_ID =
+    "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+
+
+let CCM_ID_TOKEN = null;
+
+
+/* =========================================================
+   START
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        initializeGoogleLogin();
+
+    }
+);
+
+
+/* =========================================================
+   GOOGLE LOGIN
+========================================================= */
+
+function initializeGoogleLogin() {
+
+    const loginContainer =
+        document.getElementById("googleLogin");
+
+    if (!loginContainer) {
+
+        console.error(
+            "CCM: Google login container not found."
+        );
+
+        return;
+    }
+
+
+    /*
+       Google Identity Services may load
+       slightly after DOMContentLoaded.
+    */
+
+    waitForGoogleIdentityServices(
+        loginContainer
+    );
+
+}
+
+
+/* =========================================================
+   WAIT FOR GOOGLE GIS
+========================================================= */
+
+function waitForGoogleIdentityServices(
+    loginContainer,
+    attempts = 0
+) {
+
+    if (
+        window.google &&
+        google.accounts &&
+        google.accounts.id
+    ) {
+
+        renderGoogleButton(
+            loginContainer
+        );
+
+        return;
+    }
+
+
+    if (attempts >= 50) {
+
+        showLoginError(
+            "Google authentication service could not be loaded."
+        );
+
+        return;
+    }
+
+
+    setTimeout(
+        () => {
+
+            waitForGoogleIdentityServices(
+                loginContainer,
+                attempts + 1
+            );
+
+        },
+        200
+    );
+
+}
+
+
+/* =========================================================
+   RENDER GOOGLE BUTTON
+========================================================= */
+
+function renderGoogleButton(
+    loginContainer
+) {
+
+    try {
+
+        google.accounts.id.initialize({
+
+            client_id:
+                GOOGLE_CLIENT_ID,
+
+            callback:
+                handleGoogleCredential,
+
+            auto_select:
+                false,
+
+            cancel_on_tap_outside:
+                true
+
+        });
+
+
+        google.accounts.id.renderButton(
+
+            loginContainer,
+
+            {
+
+                type: "standard",
+
+                theme: "outline",
+
+                size: "large",
+
+                text: "signin_with",
+
+                shape: "rectangular",
+
+                logo_alignment: "left",
+
+                width: 320
+
+            }
+
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CCM Google Login Error:",
+            error
+        );
+
+        showLoginError(
+            "Unable to initialize Google authentication."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   GOOGLE CREDENTIAL
+========================================================= */
+
+function handleGoogleCredential(
+    response
+) {
+
+    console.log(
+        "CCM: Google authentication successful."
+    );
+
+
+    if (
+        !response ||
+        !response.credential
+    ) {
+
+        showLoginError(
+            "Google did not return an authentication credential."
+        );
+
+        return;
+    }
+
+
+    /*
+       Keep the token in memory only.
+
+       We will pass it to the CCM backend
+       in the next authentication step.
+
+       We are deliberately NOT putting
+       the token into localStorage.
+    */
+
+    CCM_ID_TOKEN =
+        response.credential;
+
+
+    showLoginSuccess();
+
+
+    /*
+       Do NOT call the CCM API yet.
+
+       11D will verify/send the identity
+       to the CCM backend.
+    */
+
+}
+
+
+/* =========================================================
+   LOGIN SUCCESS
+========================================================= */
+
+function showLoginSuccess() {
+
+    const status =
+        document.getElementById(
+            "loginStatus"
+        );
+
+    if (status) {
+
+        status.className =
+            "login-status success";
+
+        status.textContent =
+            "Google authentication successful. Connecting to CCM...";
+
+    }
+
+
+    /*
+       For now, after Google authentication,
+       reveal the CCM application.
+
+       Backend authorization will be added
+       in 11D.
+    */
+
+    setTimeout(
+        () => {
+
+            openCCMApplication();
+
+        },
+        500
+    );
+
+}
+
+
+/* =========================================================
+   OPEN CCM
+========================================================= */
+
+function openCCMApplication() {
+
+    const loginScreen =
+        document.getElementById(
+            "loginScreen"
+        );
+
+    if (loginScreen) {
+
+        loginScreen.style.display =
+            "none";
+
+    }
+
+
+    /*
+       Initialize the dashboard shell
+       only after successful login.
+    */
 
     initNavigation();
     initMobileMenu();
 
-    loadCurrentUser();
-    loadDashboard();
-
-});
-
-
-/* =========================================================
-   API
-========================================================= */
-
-async function ccmApi(action, params = {}) {
-
-    const url = new URL(CCM_API);
-
-    url.searchParams.set("action", action);
-
-    Object.keys(params).forEach(key => {
-
-        if (
-            params[key] !== undefined &&
-            params[key] !== null &&
-            params[key] !== ""
-        ) {
-            url.searchParams.set(key, params[key]);
-        }
-
-    });
-
-    const response = await fetch(url.toString(), {
-        method: "GET",
-      });
-
-    if (!response.ok) {
-        throw new Error(
-            `HTTP ${response.status}`
-        );
-    }
-
-    const data = await response.json();
-
-    if (!data.success) {
-        throw new Error(
-            data.error || "CCM API request failed"
-        );
-    }
-
-    return data;
 }
 
 
 /* =========================================================
-   CURRENT USER
+   LOGIN ERROR
 ========================================================= */
 
-async function loadCurrentUser() {
-
-    const userName =
-        document.getElementById("userName");
-
-    const userRole =
-        document.getElementById("userRole");
-
-    try {
-
-        const data =
-            await ccmApi("me");
-
-        if (
-            data.authenticated &&
-            data.authorized &&
-            data.user
-        ) {
-
-            userName.textContent =
-                data.user.Name || "User";
-
-            userRole.textContent =
-                formatRole(data.user.Role_ID);
-
-            updateAvatar(
-                data.user.Name || "U"
-            );
-
-        } else {
-
-            userName.textContent = "Unauthorized";
-            userRole.textContent = "Access Denied";
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "CCM user error:",
-            error
-        );
-
-        userName.textContent = "User";
-        userRole.textContent = "Authentication";
-
-    }
-
-}
-
-
-/* =========================================================
-   DASHBOARD
-========================================================= */
-
-async function loadDashboard() {
-
-    setDashboardLoading();
-
-    try {
-
-        const data =
-            await ccmApi("dashboard");
-
-        if (!data.kpi) {
-            throw new Error(
-                "Invalid dashboard response"
-            );
-        }
-
-        updateKpis(data.kpi);
-
-        updateExpiryRisk(
-            data.expiryRisk || {}
-        );
-
-    } catch (error) {
-
-        console.error(
-            "CCM dashboard error:",
-            error
-        );
-
-        showDashboardError(
-            error.message
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   KPI
-========================================================= */
-
-function updateKpis(kpi) {
-
-    setText(
-        "totalCertifications",
-        valueOrZero(kpi.total)
-    );
-
-    setText(
-        "activeCertifications",
-        valueOrZero(kpi.active)
-    );
-
-    setText(
-        "renewalCertifications",
-        valueOrZero(kpi.renewal)
-    );
-
-    setText(
-        "expiredCertifications",
-        valueOrZero(kpi.expired)
-    );
-
-    setText(
-        "mandatoryCertifications",
-        valueOrZero(kpi.mandatory)
-    );
-
-    setText(
-        "complianceRate",
-        valueOrZero(kpi.compliance) + "%"
-    );
-
-}
-
-
-/* =========================================================
-   EXPIRY RISK
-========================================================= */
-
-function updateExpiryRisk(risk) {
-
-    const values = [
-
-        Number(risk["0-7"]) || 0,
-        Number(risk["8-15"]) || 0,
-        Number(risk["16-30"]) || 0,
-        Number(risk["31-60"]) || 0,
-        Number(risk["61-90"]) || 0,
-        Number(risk["90+"]) || 0,
-        Number(risk["EXPIRED"]) || 0
-
-    ];
-
-    const maxValue =
-        Math.max(...values, 1);
-
-
-    setRiskBar(
-        "risk07",
-        "risk07Value",
-        values[0],
-        maxValue
-    );
-
-    setRiskBar(
-        "risk815",
-        "risk815Value",
-        values[1],
-        maxValue
-    );
-
-    setRiskBar(
-        "risk1630",
-        "risk1630Value",
-        values[2],
-        maxValue
-    );
-
-    setRiskBar(
-        "risk3160",
-        "risk3160Value",
-        values[3],
-        maxValue
-    );
-
-    setRiskBar(
-        "risk6190",
-        "risk6190Value",
-        values[4],
-        maxValue
-    );
-
-    setRiskBar(
-        "risk90",
-        "risk90Value",
-        values[5],
-        maxValue
-    );
-
-    setRiskBar(
-        "riskExpired",
-        "riskExpiredValue",
-        values[6],
-        maxValue
-    );
-
-}
-
-
-function setRiskBar(
-    barId,
-    valueId,
-    value,
-    maxValue
+function showLoginError(
+    message
 ) {
 
-    const bar =
-        document.getElementById(barId);
-
-    const valueElement =
-        document.getElementById(valueId);
-
-    if (!bar || !valueElement) {
-        return;
-    }
-
-    valueElement.textContent =
-        value;
-
-    if (value === 0) {
-
-        bar.style.width = "0%";
-
-        return;
-    }
-
-    const percentage =
-        Math.max(
-            (value / maxValue) * 100,
-            4
+    const status =
+        document.getElementById(
+            "loginStatus"
         );
 
-    bar.style.width =
-        percentage + "%";
+    if (!status) {
+        return;
+    }
+
+
+    status.className =
+        "login-status error";
+
+    status.textContent =
+        message;
 
 }
 
@@ -312,85 +337,110 @@ function setRiskBar(
 function initNavigation() {
 
     const navItems =
-        document.querySelectorAll(".nav-item");
+        document.querySelectorAll(
+            ".nav-item"
+        );
 
     const pages =
-        document.querySelectorAll(".page");
+        document.querySelectorAll(
+            ".page"
+        );
 
     const pageTitle =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
 
-    navItems.forEach(item => {
+    navItems.forEach(
+        item => {
 
-        item.addEventListener("click", () => {
+            item.addEventListener(
+                "click",
+                () => {
 
-            const page =
-                item.dataset.page;
-
-            navItems.forEach(nav => {
-
-                nav.classList.remove(
-                    "active"
-                );
-
-            });
-
-            item.classList.add("active");
+                    const page =
+                        item.dataset.page;
 
 
-            pages.forEach(section => {
+                    navItems.forEach(
+                        nav => {
 
-                section.classList.remove(
-                    "active-page"
-                );
+                            nav.classList.remove(
+                                "active"
+                            );
 
-            });
-
-
-            const target =
-                document.getElementById(
-                    page + "Page"
-                );
-
-            if (target) {
-
-                target.classList.add(
-                    "active-page"
-                );
-
-            }
+                        }
+                    );
 
 
-            const title =
-                item.querySelector(
-                    "span:last-child"
-                );
-
-            if (title) {
-
-                pageTitle.textContent =
-                    title.textContent;
-
-            }
+                    item.classList.add(
+                        "active"
+                    );
 
 
-            const sidebar =
-                document.getElementById(
-                    "sidebar"
-                );
+                    pages.forEach(
+                        section => {
 
-            if (sidebar) {
+                            section.classList.remove(
+                                "active-page"
+                            );
 
-                sidebar.classList.remove(
-                    "open"
-                );
+                        }
+                    );
 
-            }
 
-        });
+                    const target =
+                        document.getElementById(
+                            page + "Page"
+                        );
 
-    });
+
+                    if (target) {
+
+                        target.classList.add(
+                            "active-page"
+                        );
+
+                    }
+
+
+                    const title =
+                        item.querySelector(
+                            "span:last-child"
+                        );
+
+
+                    if (
+                        title &&
+                        pageTitle
+                    ) {
+
+                        pageTitle.textContent =
+                            title.textContent;
+
+                    }
+
+
+                    const sidebar =
+                        document.getElementById(
+                            "sidebar"
+                        );
+
+
+                    if (sidebar) {
+
+                        sidebar.classList.remove(
+                            "open"
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+    );
 
 }
 
@@ -411,9 +461,16 @@ function initMobileMenu() {
             "sidebar"
         );
 
-    if (!menuButton || !sidebar) {
+
+    if (
+        !menuButton ||
+        !sidebar
+    ) {
+
         return;
+
     }
+
 
     menuButton.addEventListener(
         "click",
@@ -424,152 +481,6 @@ function initMobileMenu() {
             );
 
         }
-    );
-
-}
-
-
-/* =========================================================
-   UI HELPERS
-========================================================= */
-
-function setText(id, value) {
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-        element.textContent = value;
-    }
-
-}
-
-
-function valueOrZero(value) {
-
-    if (
-        value === undefined ||
-        value === null ||
-        value === ""
-    ) {
-        return 0;
-    }
-
-    return value;
-
-}
-
-
-function updateAvatar(name) {
-
-    const avatar =
-        document.querySelector(".avatar");
-
-    if (!avatar) {
-        return;
-    }
-
-    const cleanName =
-        String(name).trim();
-
-    if (!cleanName) {
-        avatar.textContent = "U";
-        return;
-    }
-
-    const parts =
-        cleanName.split(/\s+/);
-
-    if (parts.length === 1) {
-
-        avatar.textContent =
-            parts[0].charAt(0).toUpperCase();
-
-    } else {
-
-        avatar.textContent =
-            (
-                parts[0].charAt(0) +
-                parts[parts.length - 1].charAt(0)
-            ).toUpperCase();
-
-    }
-
-}
-
-
-function formatRole(role) {
-
-    if (!role) {
-        return "User";
-    }
-
-    return String(role)
-        .replace(/^ROLE-/i, "")
-        .replace(/[-_]/g, " ")
-        .replace(/\b\w/g, char =>
-            char.toUpperCase()
-        );
-
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-function setDashboardLoading() {
-
-    const ids = [
-
-        "totalCertifications",
-        "activeCertifications",
-        "renewalCertifications",
-        "expiredCertifications",
-        "mandatoryCertifications",
-        "complianceRate"
-
-    ];
-
-    ids.forEach(id => {
-
-        setText(id, "…");
-
-    });
-
-}
-
-
-/* =========================================================
-   API ERROR
-========================================================= */
-
-function showDashboardError(message) {
-
-    const ids = [
-
-        "totalCertifications",
-        "activeCertifications",
-        "renewalCertifications",
-        "expiredCertifications",
-        "mandatoryCertifications"
-
-    ];
-
-    ids.forEach(id => {
-
-        setText(id, "—");
-
-    });
-
-    setText(
-        "complianceRate",
-        "—"
-    );
-
-    console.error(
-        "CCM Dashboard API Error:",
-        message
     );
 
 }
