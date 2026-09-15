@@ -588,7 +588,824 @@ async function loadDashboard() {
             data
         );
 
+/* =========================================================
+   CCM — STEP 11E
+   CERTIFICATION OVERVIEW
+========================================================= */
 
+let CCM_CERTIFICATES = [];
+
+
+/* =========================================================
+   LOAD CERTIFICATIONS
+========================================================= */
+
+async function loadCertificates() {
+
+    const tableBody =
+        document.getElementById(
+            "certificateTableBody"
+        );
+
+
+    if (tableBody) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="table-loading">
+                    Loading certification records...
+                </td>
+            </tr>
+        `;
+
+    }
+
+
+    try {
+
+        const result =
+            await ccmExecute(
+                "certificates",
+                {}
+            );
+
+
+        if (
+            !result ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result?.error ||
+                "Certification records could not be loaded."
+            );
+
+        }
+
+
+        CCM_CERTIFICATES =
+            Array.isArray(result.data)
+                ? result.data
+                : [];
+
+
+        console.log(
+            "CCM: Certification records loaded:",
+            CCM_CERTIFICATES
+        );
+
+
+        populateCertificateDepartments();
+
+        renderCertificates();
+
+
+    } catch (error) {
+
+        console.error(
+            "CCM certification loading failed:",
+            error
+        );
+
+
+        if (tableBody) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="table-error">
+                        Unable to load certification records.
+                    </td>
+                </tr>
+            `;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   POPULATE DEPARTMENT FILTER
+========================================================= */
+
+function populateCertificateDepartments() {
+
+    const select =
+        document.getElementById(
+            "certificateDepartmentFilter"
+        );
+
+
+    if (!select) {
+
+        return;
+
+    }
+
+
+    const departments =
+        [
+            ...new Set(
+                CCM_CERTIFICATES
+                    .map(
+                        certificate =>
+                            String(
+                                certificate.Department || ""
+                            ).trim()
+                    )
+                    .filter(Boolean)
+            )
+        ]
+        .sort(
+            (a, b) =>
+                a.localeCompare(b)
+        );
+
+
+    select.innerHTML = `
+        <option value="">
+            All Departments
+        </option>
+    `;
+
+
+    departments.forEach(
+        department => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                department;
+
+
+            option.textContent =
+                department;
+
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   RENDER CERTIFICATIONS
+========================================================= */
+
+function renderCertificates() {
+
+    const tableBody =
+        document.getElementById(
+            "certificateTableBody"
+        );
+
+
+    const summary =
+        document.getElementById(
+            "certificateResultSummary"
+        );
+
+
+    if (!tableBody) {
+
+        return;
+
+    }
+
+
+    const search =
+        String(
+            document.getElementById(
+                "certificateSearch"
+            )?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const status =
+        String(
+            document.getElementById(
+                "certificateStatusFilter"
+            )?.value || ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+    const department =
+        String(
+            document.getElementById(
+                "certificateDepartmentFilter"
+            )?.value || ""
+        )
+        .trim()
+        .toLowerCase();
+
+
+    const filtered =
+        CCM_CERTIFICATES.filter(
+            certificate => {
+
+                const searchText = [
+
+                    certificate.Certificate_ID,
+                    certificate.Employee_ID,
+                    certificate.Employee_Name,
+                    certificate.Certification_Name,
+                    certificate.Department,
+                    certificate.Issuing_Body,
+                    certificate.Certificate_Number
+
+                ]
+                .join(" ")
+                .toLowerCase();
+
+
+                const matchesSearch =
+                    !search ||
+                    searchText.includes(
+                        search
+                    );
+
+
+                const matchesStatus =
+                    !status ||
+                    String(
+                        certificate.Status || ""
+                    )
+                    .toUpperCase() ===
+                    status;
+
+
+                const matchesDepartment =
+                    !department ||
+                    String(
+                        certificate.Department || ""
+                    )
+                    .toLowerCase() ===
+                    department;
+
+
+                return (
+                    matchesSearch &&
+                    matchesStatus &&
+                    matchesDepartment
+                );
+
+            }
+        );
+
+
+    if (summary) {
+
+        summary.textContent =
+            `${filtered.length} of ${CCM_CERTIFICATES.length} certification records`;
+
+    }
+
+
+    if (!filtered.length) {
+
+        tableBody.innerHTML = `
+            <tr>
+                <td
+                    colspan="9"
+                    class="table-empty"
+                >
+                    No certification records found.
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    tableBody.innerHTML =
+        filtered
+            .map(
+                certificate =>
+                    createCertificateRow(
+                        certificate
+                    )
+            )
+            .join("");
+
+
+    /*
+       Attach action handlers after rendering.
+    */
+
+    tableBody
+        .querySelectorAll(
+            "[data-certificate-id]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const certificateId =
+                            button.dataset.certificateId;
+
+
+                        openCertificate360(
+                            certificateId
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   CREATE CERTIFICATE ROW
+========================================================= */
+
+function createCertificateRow(
+    certificate
+) {
+
+    const certificateId =
+        escapeHtml(
+            certificate.Certificate_ID
+        );
+
+
+    const employee =
+        escapeHtml(
+            certificate.Employee_Name ||
+            certificate.Employee_ID ||
+            "-"
+        );
+
+
+    const certification =
+        escapeHtml(
+            certificate.Certification_Name ||
+            "-"
+        );
+
+
+    const department =
+        escapeHtml(
+            certificate.Department ||
+            "-"
+        );
+
+
+    const issueDate =
+        escapeHtml(
+            certificate.Issue_Date ||
+            "-"
+        );
+
+
+    const expiryDate =
+        escapeHtml(
+            certificate.Expiry_Date ||
+            "-"
+        );
+
+
+    const status =
+        String(
+            certificate.Status || ""
+        )
+        .toUpperCase();
+
+
+    const renewal =
+        String(
+            certificate.Renewal_Status || ""
+        )
+        .toUpperCase();
+
+
+    return `
+        <tr>
+
+            <td>
+                <span class="certificate-id">
+                    ${certificateId}
+                </span>
+            </td>
+
+
+            <td>
+                <strong>
+                    ${employee}
+                </strong>
+            </td>
+
+
+            <td>
+                ${certification}
+            </td>
+
+
+            <td>
+                ${department}
+            </td>
+
+
+            <td>
+                ${issueDate}
+            </td>
+
+
+            <td>
+                ${expiryDate}
+            </td>
+
+
+            <td>
+                <span class="
+                    certificate-status
+                    ${getStatusClass(status)}
+                ">
+                    ${escapeHtml(
+                        status || "-"
+                    )}
+                </span>
+            </td>
+
+
+            <td>
+                <span class="
+                    certificate-renewal
+                    ${getRenewalClass(renewal)}
+                ">
+                    ${escapeHtml(
+                        renewal || "-"
+                    )}
+                </span>
+            </td>
+
+
+            <td>
+
+                <button
+                    type="button"
+                    class="table-action"
+                    data-certificate-id="${certificateId}"
+                >
+                    View
+                </button>
+
+            </td>
+
+        </tr>
+    `;
+
+}
+
+
+/* =========================================================
+   STATUS CLASS
+========================================================= */
+
+function getStatusClass(
+    status
+) {
+
+    switch (status) {
+
+        case "ACTIVE":
+            return "status-active";
+
+        case "EXPIRED":
+            return "status-expired";
+
+        case "INACTIVE":
+            return "status-inactive";
+
+        default:
+            return "status-neutral";
+
+    }
+
+}
+
+
+/* =========================================================
+   RENEWAL CLASS
+========================================================= */
+
+function getRenewalClass(
+    renewal
+) {
+
+    if (
+        renewal.includes("EXPIRED")
+    ) {
+
+        return "renewal-expired";
+
+    }
+
+
+    if (
+        renewal.includes("URGENT") ||
+        renewal.includes("DUE") ||
+        renewal.includes("7") ||
+        renewal.includes("15") ||
+        renewal.includes("30")
+    ) {
+
+        return "renewal-warning";
+
+    }
+
+
+    if (
+        renewal.includes("RENEWED")
+    ) {
+
+        return "renewal-completed";
+
+    }
+
+
+    return "renewal-neutral";
+
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+========================================================= */
+
+function escapeHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+    .replace(
+        /</g,
+        "&lt;"
+    )
+    .replace(
+        />/g,
+        "&gt;"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
+}
+
+
+/* =========================================================
+   CERTIFICATE 360
+========================================================= */
+
+async function openCertificate360(
+    certificateId
+) {
+
+    console.log(
+        "CCM: Opening Certificate 360:",
+        certificateId
+    );
+
+
+    /*
+       11E only opens the record.
+       Full Certificate 360 UI will be built
+       in the next certification-management step.
+    */
+
+    try {
+
+        const result =
+            await ccmExecute(
+                "certificate360",
+                {
+                    certificateId:
+                        certificateId
+                }
+            );
+
+
+        if (
+            !result ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result?.error ||
+                "Certificate details could not be loaded."
+            );
+
+        }
+
+
+        console.log(
+            "CCM: Certificate 360:",
+            result
+        );
+
+
+        /*
+           Temporary production-safe behaviour:
+           show the record in a controlled dialog.
+        */
+
+        showCertificateDetails(
+            result
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CCM Certificate 360 failed:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to open certificate."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CERTIFICATE DETAILS
+========================================================= */
+
+function showCertificateDetails(
+    result
+) {
+
+    const certificate =
+        result.certificate || {};
+
+
+    const employee =
+        result.employee || {};
+
+
+    const message = [
+
+        "Certificate: " +
+        (certificate.Certificate_ID || "-"),
+
+        "Employee: " +
+        (
+            employee.Employee_Name ||
+            certificate.Employee_Name ||
+            "-"
+        ),
+
+        "Certification: " +
+        (
+            certificate.Certification_Name ||
+            "-"
+        ),
+
+        "Department: " +
+        (
+            certificate.Department ||
+            "-"
+        ),
+
+        "Issue Date: " +
+        (
+            certificate.Issue_Date ||
+            "-"
+        ),
+
+        "Expiry Date: " +
+        (
+            certificate.Expiry_Date ||
+            "-"
+        ),
+
+        "Status: " +
+        (
+            certificate.Status ||
+            "-"
+        ),
+
+        "Renewal Status: " +
+        (
+            certificate.Renewal_Status ||
+            "-"
+        )
+
+    ].join("\n");
+
+
+    alert(
+        message
+    );
+
+}
+
+
+/* =========================================================
+   CERTIFICATION EVENTS
+========================================================= */
+
+function initializeCertificationOverview() {
+
+    const search =
+        document.getElementById(
+            "certificateSearch"
+        );
+
+
+    const statusFilter =
+        document.getElementById(
+            "certificateStatusFilter"
+        );
+
+
+    const departmentFilter =
+        document.getElementById(
+            "certificateDepartmentFilter"
+        );
+
+
+    const refreshButton =
+        document.getElementById(
+            "refreshCertificatesButton"
+        );
+
+
+    if (search) {
+
+        search.addEventListener(
+            "input",
+            renderCertificates
+        );
+
+    }
+
+
+    if (statusFilter) {
+
+        statusFilter.addEventListener(
+            "change",
+            renderCertificates
+        );
+
+    }
+
+
+    if (departmentFilter) {
+
+        departmentFilter.addEventListener(
+            "change",
+            renderCertificates
+        );
+
+    }
+
+
+    if (refreshButton) {
+
+        refreshButton.addEventListener(
+            "click",
+            loadCertificates
+        );
+
+    }
+
+}
         /* =====================================================
            KPI DATA
         ===================================================== */
@@ -1078,16 +1895,13 @@ function openCCMApplication() {
     }
 
 
-    initNavigation();
-    initMobileMenu();
+   initNavigation();
+initMobileMenu();
 
+initializeCertificationOverview();
 
-    /*
-       Load live production dashboard
-       after authentication.
-    */
-
-    loadDashboard();
+loadDashboard();
+loadCertificates();
 
 }
 
