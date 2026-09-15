@@ -12,24 +12,10 @@ const GOOGLE_CLIENT_ID =
     "644454810051-pa1247vs2636vb5o0fab1loin87tu5vd.apps.googleusercontent.com";
 
 
-/*
-   IMPORTANT:
-   This MUST be the actual Apps Script PROJECT / SCRIPT ID.
-
-   Find it:
-   Apps Script
-   → Project Settings
-   → Script ID
-*/
 const CCM_SCRIPT_ID =
     "1U-kT27QuT7h98HNKHlseXJubYRIknWkTwtp1MYx5n60TYcvJYKJR8SAK";
 
 
-/*
-   OAuth scopes required by the CCM Apps Script project.
-
-   These must cover the scopes used by the script.
-*/
 const CCM_OAUTH_SCOPES = [
     "https://www.googleapis.com/auth/script.scriptapp",
     "https://www.googleapis.com/auth/script.send_mail",
@@ -76,12 +62,8 @@ function initializeCCMOAuth() {
         !google.accounts.oauth2
     ) {
 
-        /*
-           GIS may not have loaded yet.
-           initializeGoogleLogin() will wait for it.
-        */
-
         return false;
+
     }
 
 
@@ -106,6 +88,7 @@ function initializeCCMOAuth() {
             "CCM: OAuth token client initialized."
         );
 
+
         return true;
 
     } catch (error) {
@@ -115,11 +98,14 @@ function initializeCCMOAuth() {
             error
         );
 
+
         showLoginError(
             "Unable to initialize CCM authorization."
         );
 
+
         return false;
+
     }
 
 }
@@ -144,6 +130,7 @@ function initializeGoogleLogin() {
         );
 
         return;
+
     }
 
 
@@ -170,13 +157,10 @@ function waitForGoogleIdentityServices(
         google.accounts.oauth2
     ) {
 
-        /*
-           OAuth token client may have been
-           initialized before GIS finished loading.
-        */
-
         if (!CCM_TOKEN_CLIENT) {
+
             initializeCCMOAuth();
+
         }
 
 
@@ -184,7 +168,9 @@ function waitForGoogleIdentityServices(
             loginContainer
         );
 
+
         return;
+
     }
 
 
@@ -194,7 +180,9 @@ function waitForGoogleIdentityServices(
             "Google authentication service could not be loaded."
         );
 
+
         return;
+
     }
 
 
@@ -222,12 +210,6 @@ function renderGoogleButton(
 ) {
 
     try {
-
-        /*
-           IMPORTANT:
-           Google Sign-In button uses google.accounts.id
-           NOT google.accounts.oauth2.
-        */
 
         google.accounts.id.initialize({
 
@@ -290,6 +272,7 @@ function renderGoogleButton(
             error
         );
 
+
         showLoginError(
             "Unable to initialize Google authentication."
         );
@@ -321,7 +304,9 @@ function handleGoogleCredential(
             "Google did not return an authentication credential."
         );
 
+
         return;
+
     }
 
 
@@ -334,10 +319,9 @@ function handleGoogleCredential(
 
 
     /*
-       We now need an OAuth ACCESS TOKEN.
+       Request OAuth access token.
 
-       The ID token is NOT the token used
-       to call Apps Script scripts.run.
+       ID token is NOT used for scripts.run.
     */
 
     requestCCMAccessToken();
@@ -359,7 +343,9 @@ function requestCCMAccessToken() {
                 "CCM authorization could not be initialized."
             );
 
+
             return;
+
         }
 
     }
@@ -374,12 +360,14 @@ function requestCCMAccessToken() {
 
         });
 
+
     } catch (error) {
 
         console.error(
             "CCM access token request failed:",
             error
         );
+
 
         showLoginError(
             "Unable to obtain Google Workspace authorization."
@@ -408,11 +396,14 @@ function handleCCMAccessToken(
             response
         );
 
+
         showLoginError(
             "Google authorization was denied or failed."
         );
 
+
         return;
+
     }
 
 
@@ -422,7 +413,9 @@ function handleCCMAccessToken(
             "Google did not return an access token."
         );
 
+
         return;
+
     }
 
 
@@ -439,17 +432,19 @@ function handleCCMAccessToken(
     );
 
 
-    /*
-       STEP 11D:
-       Call the Apps Script CCM gateway.
-    */
-
     authenticateCCMBackend();
-   /* =========================================================
+
+}
+
+
+/* =========================================================
    CCM API EXECUTOR
 ========================================================= */
 
-async function ccmExecute(action, params = {}) {
+async function ccmExecute(
+    action,
+    params = {}
+) {
 
     if (!CCM_ACCESS_TOKEN) {
 
@@ -467,28 +462,34 @@ async function ccmExecute(action, params = {}) {
             ":run",
             {
 
-                method: "POST",
+                method:
+                    "POST",
 
-                headers: {
+                headers:
+                    {
 
-                    "Authorization":
-                        "Bearer " + CCM_ACCESS_TOKEN,
+                        "Authorization":
+                            "Bearer " +
+                            CCM_ACCESS_TOKEN,
 
-                    "Content-Type":
-                        "application/json"
+                        "Content-Type":
+                            "application/json"
 
-                },
+                    },
 
-                body: JSON.stringify({
+                body:
+                    JSON.stringify({
 
-                    function: "ccmExecute",
+                        function:
+                            "ccmExecute",
 
-                    parameters: [
-                        action,
-                        params
-                    ]
+                        parameters:
+                            [
+                                action,
+                                params
+                            ]
 
-                })
+                    })
 
             }
         );
@@ -553,8 +554,288 @@ async function ccmExecute(action, params = {}) {
     return result;
 
 }
+/* =========================================================
+   LOAD LIVE DASHBOARD
+========================================================= */
+
+async function loadDashboard() {
+
+    try {
+
+        console.log(
+            "CCM: Loading live dashboard..."
+        );
+
+        const data =
+            await ccmExecute(
+                "dashboard",
+                {}
+            );
+
+
+        if (!data || !data.success) {
+
+            throw new Error(
+                data?.error ||
+                "Dashboard data could not be loaded."
+            );
+
+        }
+
+
+        console.log(
+            "CCM: Dashboard data loaded:",
+            data
+        );
+
+
+        /* =====================================================
+           KPI DATA
+        ===================================================== */
+
+        const kpi =
+            data.kpi || {};
+
+
+        setElementText(
+            "totalCertifications",
+            kpi.total ?? 0
+        );
+
+
+        setElementText(
+            "activeCertifications",
+            kpi.active ?? 0
+        );
+
+
+        setElementText(
+            "renewalCertifications",
+            kpi.renewal ?? 0
+        );
+
+
+        setElementText(
+            "expiredCertifications",
+            kpi.expired ?? 0
+        );
+
+
+        setElementText(
+            "mandatoryCertifications",
+            kpi.mandatory ?? 0
+        );
+
+
+        setElementText(
+            "complianceRate",
+            (kpi.compliance ?? 0) + "%"
+        );
+
+
+        /* =====================================================
+           EXPIRY RISK
+        ===================================================== */
+
+        const risk =
+            data.expiryRisk || {};
+
+
+        updateRiskRow(
+            "risk07",
+            "risk07Value",
+            risk["0-7"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk815",
+            "risk815Value",
+            risk["8-15"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk1630",
+            "risk1630Value",
+            risk["16-30"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk3160",
+            "risk3160Value",
+            risk["31-60"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk6190",
+            "risk6190Value",
+            risk["61-90"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk90",
+            "risk90Value",
+            risk["90+"] || 0
+        );
+
+
+        updateRiskRow(
+            "riskExpired",
+            "riskExpiredValue",
+            risk["EXPIRED"] || 0
+        );
+
+
+        console.log(
+            "CCM: Live dashboard rendered successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CCM dashboard loading failed:",
+            error
+        );
+
+    }
+
 }
 
+
+/* =========================================================
+   SAFE TEXT UPDATE
+========================================================= */
+
+function setElementText(
+    elementId,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (element) {
+
+        element.textContent =
+            value;
+
+    }
+
+}
+
+
+/* =========================================================
+   UPDATE EXPIRY RISK ROW
+========================================================= */
+
+function updateRiskRow(
+    barId,
+    valueId,
+    value
+) {
+
+    const bar =
+        document.getElementById(
+            barId
+        );
+
+
+    const valueElement =
+        document.getElementById(
+            valueId
+        );
+
+
+    if (valueElement) {
+
+        valueElement.textContent =
+            value;
+
+    }
+
+
+    if (bar) {
+
+        /*
+           Width is relative to the largest
+           expiry-risk category.
+        */
+
+        const allRiskValues = [
+
+            getRiskValue("risk07Value"),
+            getRiskValue("risk815Value"),
+            getRiskValue("risk1630Value"),
+            getRiskValue("risk3160Value"),
+            getRiskValue("risk6190Value"),
+            getRiskValue("risk90Value"),
+            getRiskValue("riskExpiredValue")
+
+        ];
+
+
+        const maxValue =
+            Math.max(
+                ...allRiskValues,
+                1
+            );
+
+
+        const percentage =
+            Math.round(
+                (value / maxValue) * 100
+            );
+
+
+        bar.style.width =
+            percentage + "%";
+
+    }
+
+}
+
+
+/* =========================================================
+   GET RISK VALUE
+========================================================= */
+
+function getRiskValue(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return 0;
+
+    }
+
+
+    const value =
+        parseInt(
+            element.textContent,
+            10
+        );
+
+
+    return Number.isFinite(value)
+        ? value
+        : 0;
+
+}
 
 /* =========================================================
    CALL CCM BACKEND
@@ -568,7 +849,9 @@ async function authenticateCCMBackend() {
             "CCM access token is missing."
         );
 
+
         return;
+
     }
 
 
@@ -577,128 +860,29 @@ async function authenticateCCMBackend() {
         showLoginConnecting();
 
 
-        const response =
-            await fetch(
-                "https://script.googleapis.com/v1/scripts/" +
-                encodeURIComponent(CCM_SCRIPT_ID) +
-                ":run",
-                {
-
-                    method:
-                        "POST",
-
-                    headers:
-                        {
-
-                            "Authorization":
-                                "Bearer " +
-                                CCM_ACCESS_TOKEN,
-
-                            "Content-Type":
-                                "application/json"
-
-                        },
-
-                    body:
-                        JSON.stringify({
-
-                            function:
-                                "ccmExecute",
-
-                            parameters:
-                                [
-                                    "me",
-                                    {}
-                                ]
-
-                        })
-
-                }
+        const result =
+            await ccmExecute(
+                "me",
+                {}
             );
-
-
-        const data =
-            await response.json();
 
 
         console.log(
             "CCM backend response:",
-            data
+            result
         );
 
 
-        if (!response.ok) {
-
-            console.error(
-                "CCM scripts.run HTTP error:",
-                data
-            );
-
-            showLoginError(
-                "CCM backend authorization failed."
-            );
-
-            return;
-        }
-
-
-        /*
-           Apps Script can return an execution-level
-           error or the function's result.
-        */
-
-        if (
-            data.error
-        ) {
-
-            console.error(
-                "CCM Apps Script execution error:",
-                data.error
-            );
-
-            showLoginError(
-                "CCM backend execution failed."
-            );
-
-            return;
-        }
-
-
-        const result =
-            data.response &&
-            data.response.result;
-
-
-        if (!result) {
-
-            console.error(
-                "CCM returned no result:",
-                data
-            );
-
-            showLoginError(
-                "CCM returned an invalid response."
-            );
-
-            return;
-        }
-
-
-        if (
-            !result.success
-        ) {
-
-            console.error(
-                "CCM authorization rejected:",
-                result
-            );
+        if (!result.success) {
 
             showLoginError(
                 result.error ||
                 "You are not authorized to access CCM."
             );
 
+
             return;
+
         }
 
 
@@ -710,7 +894,9 @@ async function authenticateCCMBackend() {
                 "Google authentication could not be verified by CCM."
             );
 
+
             return;
+
         }
 
 
@@ -722,16 +908,19 @@ async function authenticateCCMBackend() {
                 "You do not have permission to access CCM."
             );
 
+
             return;
+
         }
 
 
         /*
-           Backend authentication successful.
+           Store authenticated user information.
         */
 
         window.CCM_CURRENT_USER =
             result.user || null;
+
 
         window.CCM_PERMISSIONS =
             result.permissions || [];
@@ -755,7 +944,9 @@ async function authenticateCCMBackend() {
             error
         );
 
+
         showLoginError(
+            error.message ||
             "Unable to connect to the CCM backend."
         );
 
@@ -780,6 +971,7 @@ function showLoginConnecting() {
 
         status.className =
             "login-status success";
+
 
         status.textContent =
             "Google authenticated. Verifying CCM access...";
@@ -808,6 +1000,7 @@ function showLoginSuccess(
         status.className =
             "login-status success";
 
+
         status.textContent =
             "CCM authentication successful. Loading dashboard...";
 
@@ -815,8 +1008,7 @@ function showLoginSuccess(
 
 
     /*
-       Populate top-right user information
-       if those elements exist.
+       Populate user information.
     */
 
     if (user) {
@@ -825,6 +1017,7 @@ function showLoginSuccess(
             document.getElementById(
                 "userName"
             );
+
 
         const userRole =
             document.getElementById(
@@ -888,8 +1081,15 @@ function openCCMApplication() {
     initNavigation();
     initMobileMenu();
 
-}
 
+    /*
+       Load live production dashboard
+       after authentication.
+    */
+
+    loadDashboard();
+
+}
 
 /* =========================================================
    LOGIN ERROR
@@ -908,6 +1108,7 @@ function showLoginError(
     if (!status) {
 
         return;
+
     }
 
 
