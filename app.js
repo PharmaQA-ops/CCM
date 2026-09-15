@@ -445,7 +445,114 @@ function handleCCMAccessToken(
     */
 
     authenticateCCMBackend();
+   /* =========================================================
+   CCM API EXECUTOR
+========================================================= */
 
+async function ccmExecute(action, params = {}) {
+
+    if (!CCM_ACCESS_TOKEN) {
+
+        throw new Error(
+            "CCM access token is not available."
+        );
+
+    }
+
+
+    const response =
+        await fetch(
+            "https://script.googleapis.com/v1/scripts/" +
+            encodeURIComponent(CCM_SCRIPT_ID) +
+            ":run",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Authorization":
+                        "Bearer " + CCM_ACCESS_TOKEN,
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body: JSON.stringify({
+
+                    function: "ccmExecute",
+
+                    parameters: [
+                        action,
+                        params
+                    ]
+
+                })
+
+            }
+        );
+
+
+    const data =
+        await response.json();
+
+
+    console.log(
+        "CCM API [" + action + "]:",
+        data
+    );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.error?.message ||
+            "CCM API request failed."
+        );
+
+    }
+
+
+    if (data.error) {
+
+        throw new Error(
+            data.error.message ||
+            "CCM Apps Script execution failed."
+        );
+
+    }
+
+
+    if (
+        !data.response ||
+        !data.response.result
+    ) {
+
+        throw new Error(
+            "CCM returned an invalid API response."
+        );
+
+    }
+
+
+    const result =
+        data.response.result;
+
+
+    if (!result.success) {
+
+        throw new Error(
+            result.error ||
+            "CCM request was rejected."
+        );
+
+    }
+
+
+    return result;
+
+}
 }
 
 
