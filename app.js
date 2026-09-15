@@ -11,7 +11,7 @@
 */
 
 const GOOGLE_CLIENT_ID =
-    "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+    "644454810051-pa1247vs2636vb5o0fab1loin87tu5vd.apps.googleusercontent.com";
 
 
 let CCM_ID_TOKEN = null;
