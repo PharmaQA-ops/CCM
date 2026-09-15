@@ -1524,8 +1524,13 @@ function showCertificateDetails(
     const employee =
         result?.employee || {};
 
-    const certificateDocument =
-        result?.document || {};
+    const certificateDocuments =
+    Array.isArray(result?.documents)
+        ? result.documents
+        : [];
+
+const certificateDocument =
+    certificateDocuments[0] || {};
 
     /*
        Remove any existing Certificate 360 modal.
