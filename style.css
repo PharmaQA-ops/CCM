@@ -1152,14 +1152,21 @@ button {
 }
 /* =========================================================
    STEP 11F — CERTIFICATION OVERVIEW
-   Production UI Styling
+   BORDER + TABLE STYLING
 ========================================================= */
 
+/* Main Certification Overview panel */
 .certification-overview-panel {
     width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 21px;
+    margin-bottom: 18px;
     overflow: hidden;
 }
 
+/* Header */
 .certification-overview-panel .panel-header {
     margin-bottom: 18px;
 }
@@ -1171,14 +1178,16 @@ button {
 }
 
 .certification-overview-panel .panel-header span {
-    font-size: 10px;
+    display: block;
+    margin-top: 4px;
     color: var(--muted);
+    font-size: 10px;
 }
 
 
-/* ---------------------------------------------------------
-   HEADER ACTIONS
---------------------------------------------------------- */
+/* =========================================================
+   HEADER BUTTONS
+========================================================= */
 
 .certification-overview-panel .panel-header > div:last-child {
     display: flex;
@@ -1186,23 +1195,21 @@ button {
     gap: 14px;
 }
 
-#refreshCertificatesButton,
-#viewAllCertificatesButton {
-    border: 0;
-    background: transparent;
+#refreshCertificatesButton {
+    height: 36px;
+    padding: 0 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    background: #ffffff;
     color: var(--primary);
+
     font-family: inherit;
     font-size: 11px;
     font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-}
 
-#refreshCertificatesButton {
-    padding: 7px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: #ffffff;
+    cursor: pointer;
 }
 
 #refreshCertificatesButton:hover {
@@ -1210,30 +1217,44 @@ button {
     border-color: #b9c9d9;
 }
 
+#viewAllCertificatesButton {
+    border: 0;
+    background: transparent;
+
+    color: var(--primary);
+
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
 #viewAllCertificatesButton:hover {
     text-decoration: underline;
 }
 
 
-/* ---------------------------------------------------------
-   FILTER AREA
---------------------------------------------------------- */
+/* =========================================================
+   FILTER SECTION
+========================================================= */
 
 .certification-overview-panel .certificate-filters {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
+    gap: 8px;
+
+    margin-bottom: 10px;
 }
 
 #certificateSearch {
-    width: 280px;
-    height: 36px;
+    width: 330px;
+    height: 38px;
+
     padding: 0 12px;
 
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 7px;
 
     background: #ffffff;
     color: var(--text);
@@ -1242,9 +1263,6 @@ button {
     font-size: 11px;
 
     outline: none;
-    transition:
-        border-color .2s,
-        box-shadow .2s;
 }
 
 #certificateSearch::placeholder {
@@ -1253,18 +1271,19 @@ button {
 
 #certificateSearch:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(18, 60, 105, .08);
+
+    box-shadow:
+        0 0 0 3px rgba(18, 60, 105, .08);
 }
 
 #certificateStatusFilter,
 #certificateDepartmentFilter {
-    height: 36px;
-    min-width: 145px;
+    height: 38px;
 
-    padding: 0 30px 0 10px;
+    padding: 0 32px 0 11px;
 
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 7px;
 
     background: #ffffff;
     color: var(--text);
@@ -1279,13 +1298,15 @@ button {
 #certificateStatusFilter:focus,
 #certificateDepartmentFilter:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(18, 60, 105, .08);
+
+    box-shadow:
+        0 0 0 3px rgba(18, 60, 105, .08);
 }
 
 
-/* ---------------------------------------------------------
-   RESULT SUMMARY
---------------------------------------------------------- */
+/* =========================================================
+   RESULT COUNT
+========================================================= */
 
 #certificateResultSummary {
     margin: 8px 0 12px;
@@ -1297,29 +1318,31 @@ button {
 }
 
 
-/* ---------------------------------------------------------
-   TABLE CONTAINER
---------------------------------------------------------- */
+/* =========================================================
+   TABLE OUTER BORDER
+========================================================= */
 
-.certification-overview-panel .table-wrapper,
-.certification-overview-panel .certificate-table-wrapper {
+.certification-overview-panel .certificate-table-wrapper,
+.certification-overview-panel .table-wrapper {
     width: 100%;
-    overflow-x: auto;
 
-    border: 1px solid var(--border);
-    border-radius: 7px;
+    border: 1px solid #d9e0e7;
+    border-radius: 8px;
 
     background: #ffffff;
+
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    CERTIFICATION TABLE
---------------------------------------------------------- */
+========================================================= */
 
 #certificateTable {
     width: 100%;
-    min-width: 920px;
+    min-width: 950px;
 
     border-collapse: separate;
     border-spacing: 0;
@@ -1327,24 +1350,31 @@ button {
     font-size: 10px;
 }
 
+
+/* Table header */
+
 #certificateTable thead th {
-    height: 38px;
+    height: 40px;
 
-    padding: 0 11px;
+    padding: 0 10px;
 
-    background: #f7f9fb;
-    color: #56616d;
+    background: #f5f7fa;
+    color: #4f5b67;
 
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid #d9e0e7;
 
     font-size: 9px;
     font-weight: 700;
 
     text-align: left;
     white-space: nowrap;
+
     text-transform: uppercase;
-    letter-spacing: .35px;
+    letter-spacing: .3px;
 }
+
+
+/* Header first / last corners */
 
 #certificateTable thead th:first-child {
     border-top-left-radius: 7px;
@@ -1354,10 +1384,15 @@ button {
     border-top-right-radius: 7px;
 }
 
-#certificateTable tbody td {
-    height: 46px;
 
-    padding: 8px 11px;
+/* Table cells */
+
+#certificateTable tbody td {
+    height: 45px;
+
+    padding: 7px 10px;
+
+    background: #ffffff;
 
     color: var(--text);
 
@@ -1369,25 +1404,35 @@ button {
     white-space: nowrap;
 }
 
+
+/* Remove bottom border from final row */
+
 #certificateTable tbody tr:last-child td {
     border-bottom: 0;
 }
 
-#certificateTable tbody tr {
-    transition: background .15s ease;
-}
 
-#certificateTable tbody tr:hover {
+/* Row hover */
+
+#certificateTable tbody tr:hover td {
     background: #f8fbfe;
 }
 
 
-/* ---------------------------------------------------------
-   TABLE COLUMN EMPHASIS
---------------------------------------------------------- */
+/* =========================================================
+   COLUMN STYLING
+========================================================= */
 
 #certificateTable tbody td:first-child {
     color: var(--primary);
+
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+
+    font-size: 9px;
     font-weight: 700;
 }
 
@@ -1406,17 +1451,18 @@ button {
 }
 
 
-/* ---------------------------------------------------------
-   STATUS / RENEWAL BADGES
---------------------------------------------------------- */
+/* =========================================================
+   STATUS BADGES
+========================================================= */
 
 .certificate-status-badge,
 .certificate-renewal-badge {
     display: inline-flex;
+
     align-items: center;
     justify-content: center;
 
-    min-height: 23px;
+    min-height: 22px;
 
     padding: 3px 8px;
 
@@ -1425,39 +1471,40 @@ button {
     font-size: 8px;
     font-weight: 700;
 
-    letter-spacing: .3px;
+    letter-spacing: .25px;
+
     white-space: nowrap;
 }
 
 
-/* ACTIVE */
+/* Active */
 
 .status-active,
 .status-valid {
     background: #e9f7ef;
-    color: var(--success);
+    color: #198754;
 }
 
 
-/* EXPIRED */
+/* Expired */
 
 .status-expired,
 .renewal-expired {
     background: #fdebea;
-    color: var(--danger);
+    color: #c0392b;
 }
 
 
-/* RENEWAL DUE */
+/* Renewal Due */
 
-.renewal-due,
-.status-renewal-due {
+.status-renewal-due,
+.renewal-due {
     background: #fff4df;
-    color: var(--warning);
+    color: #d88900;
 }
 
 
-/* DEFAULT */
+/* Default */
 
 .status-default,
 .renewal-default {
@@ -1466,12 +1513,13 @@ button {
 }
 
 
-/* ---------------------------------------------------------
-   ACTION BUTTON
---------------------------------------------------------- */
+/* =========================================================
+   VIEW BUTTON
+========================================================= */
 
 .certificate-view-button {
     display: inline-flex;
+
     align-items: center;
     justify-content: center;
 
@@ -1480,7 +1528,7 @@ button {
 
     padding: 0 10px;
 
-    border: 1px solid #cfd7df;
+    border: 1px solid #cbd4dd;
     border-radius: 5px;
 
     background: #ffffff;
@@ -1493,9 +1541,9 @@ button {
     cursor: pointer;
 
     transition:
-        background .15s,
-        border-color .15s,
-        color .15s;
+        background .15s ease,
+        border-color .15s ease,
+        color .15s ease;
 }
 
 .certificate-view-button:hover {
@@ -1504,108 +1552,42 @@ button {
     color: #ffffff;
 }
 
-.certificate-view-button:active {
-    transform: translateY(1px);
-}
 
+/* =========================================================
+   EMPTY / LOADING
+========================================================= */
 
-/* ---------------------------------------------------------
-   EMPTY TABLE STATE
---------------------------------------------------------- */
-
-#certificateTableBody .certificate-empty-row td {
-    height: 120px;
-
-    text-align: center;
-
-    color: var(--muted);
-    font-size: 11px;
-}
-
-
-/* ---------------------------------------------------------
-   LOADING STATE
---------------------------------------------------------- */
-
+#certificateTableBody .certificate-empty-row td,
 #certificateTableBody .certificate-loading-row td {
     height: 100px;
 
     text-align: center;
 
     color: var(--muted);
-    font-size: 10px;
 }
 
 
-/* ---------------------------------------------------------
-   CERTIFICATE ID
---------------------------------------------------------- */
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
-.certificate-id {
-    font-family:
-        "SFMono-Regular",
-        Consolas,
-        "Liberation Mono",
-        monospace;
-
-    font-size: 9px;
-    letter-spacing: .2px;
-}
-
-
-/* ---------------------------------------------------------
-   EMPLOYEE NAME
---------------------------------------------------------- */
-
-.certificate-employee-name {
-    font-weight: 600;
-}
-
-.certificate-employee-id {
-    display: block;
-
-    margin-top: 2px;
-
-    color: var(--muted);
-
-    font-size: 8px;
-}
-
-
-/* ---------------------------------------------------------
-   CERTIFICATION NAME
---------------------------------------------------------- */
-
-.certificate-name {
-    max-width: 190px;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-
-/* ---------------------------------------------------------
-   RESPONSIVE TABLE
---------------------------------------------------------- */
-
-@media (max-width: 1000px) {
+@media (max-width: 900px) {
 
     .certification-overview-panel {
         padding: 18px;
     }
 
     #certificateSearch {
-        width: 240px;
+        width: 260px;
     }
 
     #certificateTable {
-        min-width: 900px;
+        min-width: 950px;
     }
 }
 
 
-@media (max-width: 700px) {
+@media (max-width: 650px) {
 
     .certification-overview-panel .panel-header {
         align-items: flex-start;
@@ -1627,32 +1609,10 @@ button {
     #certificateStatusFilter,
     #certificateDepartmentFilter {
         width: 100%;
-        min-width: 0;
     }
 
-    .certification-overview-panel .certificate-table-wrapper,
-    .certification-overview-panel .table-wrapper {
-        border-radius: 6px;
-    }
-}
-
-
-@media (max-width: 430px) {
-
-    .certification-overview-panel {
-        padding: 15px;
-    }
-
-    .certification-overview-panel .panel-header h2 {
-        font-size: 14px;
-    }
-
-    .certification-overview-panel .panel-header span {
-        font-size: 9px;
-    }
-
-    #refreshCertificatesButton,
-    #viewAllCertificatesButton {
-        font-size: 10px;
+    .certification-overview-panel
+    .certificate-table-wrapper {
+        border-radius: 7px;
     }
 }
