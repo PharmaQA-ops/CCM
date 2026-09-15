@@ -1,1 +1,257 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
+:root {
+    --primary: #123c69;
+    --primary-dark: #0b2948;
+    --text: #17202a;
+    --muted: #687481;
+    --border: #e2e7ec;
+    --surface: #ffffff;
+    --background: #f4f7fa;
+}
+
+body {
+    min-height: 100vh;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    background: var(--background);
+    color: var(--text);
+}
+
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 48% 52%;
+}
+
+.login-card {
+    background: var(--surface);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 8%;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-logo {
+    width: 58px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.brand-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.brand-text h1 {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.brand-text p {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.login-content {
+    width: min(430px, 100%);
+    margin: auto 0;
+}
+
+.system-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    color: var(--primary);
+    margin-bottom: 18px;
+}
+
+.login-content h2 {
+    font-size: 42px;
+    line-height: 1.08;
+    letter-spacing: -1.5px;
+    margin-bottom: 18px;
+}
+
+.login-description {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin-bottom: 34px;
+}
+
+.google-login {
+    width: 100%;
+    min-height: 54px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #ffffff;
+    color: #202124;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.google-login:hover {
+    transform: translateY(-1px);
+    border-color: #c9d1d9;
+    box-shadow: 0 8px 24px rgba(20, 40, 60, 0.08);
+}
+
+.google-icon {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.security-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    margin-top: 20px;
+    padding: 13px 14px;
+    border-radius: 8px;
+    background: #f6f8fa;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+.security-icon {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.login-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding-top: 30px;
+    color: #8a949e;
+    font-size: 10px;
+}
+
+.login-background {
+    position: relative;
+    overflow: hidden;
+    min-height: 100vh;
+    background:
+        linear-gradient(
+            135deg,
+            #0b2948,
+            #123c69
+        );
+    display: flex;
+    align-items: flex-end;
+    padding: 8%;
+}
+
+.background-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(
+            circle at 20% 20%,
+            rgba(255,255,255,0.12),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 80% 70%,
+            rgba(255,255,255,0.08),
+            transparent 40%
+        );
+}
+
+.background-content {
+    position: relative;
+    z-index: 1;
+    max-width: 550px;
+    color: #ffffff;
+}
+
+.background-content span {
+    display: block;
+    margin-bottom: 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    opacity: 0.72;
+}
+
+.background-content h2 {
+    font-size: clamp(40px, 5vw, 72px);
+    line-height: 0.98;
+    letter-spacing: -3px;
+    margin-bottom: 22px;
+}
+
+.background-content p {
+    max-width: 430px;
+    font-size: 16px;
+    line-height: 1.7;
+    opacity: 0.78;
+}
+
+@media (max-width: 900px) {
+
+    .login-page {
+        grid-template-columns: 1fr;
+    }
+
+    .login-background {
+        display: none;
+    }
+
+    .login-card {
+        padding: 32px 7%;
+    }
+
+    .login-content {
+        margin: auto 0;
+    }
+
+}
+
+@media (max-width: 500px) {
+
+    .login-card {
+        padding: 24px;
+    }
+
+    .login-content h2 {
+        font-size: 34px;
+    }
+
+    .login-footer {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+}
