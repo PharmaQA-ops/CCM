@@ -1519,70 +1519,486 @@ function showCertificateDetails(
 ) {
 
     const certificate =
-        result.certificate || {};
-
+        result?.certificate || {};
 
     const employee =
-        result.employee || {};
+        result?.employee || {};
+
+    const certificateDocument =
+        result?.document || {};
+
+    /*
+       Remove any existing Certificate 360 modal.
+    */
+
+    const existingModal =
+        document.getElementById(
+            "certificate360Modal"
+        );
+
+    if (existingModal) {
+        existingModal.remove();
+    }
 
 
-    const message = [
+    /*
+       Safe display helper.
+    */
 
-        "Certificate: " +
-        (certificate.Certificate_ID || "-"),
-
-        "Employee: " +
-        (
-            employee.Employee_Name ||
-            certificate.Employee_Name ||
-            "-"
-        ),
-
-        "Certification: " +
-        (
-            certificate.Certification_Name ||
-            "-"
-        ),
-
-        "Department: " +
-        (
-            certificate.Department ||
-            "-"
-        ),
-
-        "Issue Date: " +
-        (
-            certificate.Issue_Date ||
-            "-"
-        ),
-
-        "Expiry Date: " +
-        (
-            certificate.Expiry_Date ||
-            "-"
-        ),
-
-        "Status: " +
-        (
-            certificate.Status ||
-            "-"
-        ),
-
-        "Renewal Status: " +
-        (
-            certificate.Renewal_Status ||
-            "-"
-        )
-
-    ].join("\n");
+    const safe = value =>
+        escapeHtml(
+            value === null ||
+            value === undefined ||
+            value === ""
+                ? "-"
+                : value
+        );
 
 
-    alert(
-        message
+    const employeeName =
+        employee.Employee_Name ||
+        certificate.Employee_Name ||
+        "-";
+
+
+    const employeeId =
+        employee.Employee_ID ||
+        certificate.Employee_ID ||
+        "-";
+
+
+    const status =
+        String(
+            certificate.Status || "-"
+        ).toUpperCase();
+
+
+    const renewalStatus =
+        String(
+            certificate.Renewal_Status || "-"
+        ).toUpperCase();
+
+
+    const documentId =
+        certificateDocument.Document_ID ||
+        "-";
+
+
+    const classification =
+        certificateDocument.Classification ||
+        "-";
+
+
+    const documentName =
+        certificateDocument.Document_Name ||
+        certificateDocument.File_Name ||
+        "-";
+
+
+    const downloadAllowed =
+        certificateDocument.Download_Allowed === true;
+
+
+    /*
+       Create Certificate 360 modal.
+    */
+
+    const modal =
+        document.createElement("div");
+
+    modal.id =
+        "certificate360Modal";
+
+    modal.className =
+        "certificate360-modal";
+
+
+    modal.innerHTML = `
+
+        <div
+            class="certificate360-backdrop"
+            data-certificate360-close
+        ></div>
+
+
+        <section
+            class="certificate360-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="certificate360Title"
+        >
+
+            <header class="certificate360-header">
+
+                <div>
+
+                    <span class="certificate360-eyebrow">
+                        CERTIFICATION RECORD
+                    </span>
+
+                    <h2 id="certificate360Title">
+                        Certificate 360
+                    </h2>
+
+                    <p>
+                        Complete certification record
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="certificate360-close"
+                    id="certificate360Close"
+                    aria-label="Close"
+                >
+                    ×
+                </button>
+
+            </header>
+
+
+            <div class="certificate360-body">
+
+                <div class="certificate360-summary">
+
+                    <div class="certificate360-summary-icon">
+                        ✓
+                    </div>
+
+                    <div>
+
+                        <span>
+                            Certificate ID
+                        </span>
+
+                        <strong>
+                            ${safe(
+                                certificate.Certificate_ID
+                            )}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <section class="certificate360-section">
+
+                    <div class="certificate360-section-title">
+                        Certificate Details
+                    </div>
+
+                    <div class="certificate360-grid">
+
+                        <div class="certificate360-field">
+                            <span>Certification</span>
+                            <strong>
+                                ${safe(
+                                    certificate.Certification_Name
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Certificate Number</span>
+                            <strong>
+                                ${safe(
+                                    certificate.Certificate_Number
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Issuing Body</span>
+                            <strong>
+                                ${safe(
+                                    certificate.Issuing_Body
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Department</span>
+                            <strong>
+                                ${safe(
+                                    certificate.Department
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Issue Date</span>
+                            <strong>
+                                ${safe(
+                                    certificate.Issue_Date
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Expiry Date</span>
+                            <strong>
+                                ${safe(
+                                    certificate.Expiry_Date
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Status</span>
+                            <strong
+                                class="certificate360-value-badge ${getStatusClass(status)}"
+                            >
+                                ${safe(status)}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Renewal Status</span>
+                            <strong
+                                class="certificate360-value-badge ${getRenewalClass(renewalStatus)}"
+                            >
+                                ${safe(renewalStatus)}
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <section class="certificate360-section">
+
+                    <div class="certificate360-section-title">
+                        Employee
+                    </div>
+
+                    <div class="certificate360-grid">
+
+                        <div class="certificate360-field">
+                            <span>Employee Name</span>
+                            <strong>
+                                ${safe(employeeName)}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Employee ID</span>
+                            <strong>
+                                ${safe(employeeId)}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Designation</span>
+                            <strong>
+                                ${safe(
+                                    employee.Designation
+                                )}
+                            </strong>
+                        </div>
+
+                        <div class="certificate360-field">
+                            <span>Location</span>
+                            <strong>
+                                ${safe(
+                                    employee.Location
+                                )}
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <section class="certificate360-section">
+
+                    <div class="certificate360-section-title">
+                        Certificate Document
+                    </div>
+
+                    <div class="certificate360-document">
+
+                        <div class="certificate360-document-icon">
+                            PDF
+                        </div>
+
+                        <div class="certificate360-document-info">
+
+                            <strong>
+                                ${safe(documentName)}
+                            </strong>
+
+                            <span>
+                                Document ID: ${safe(documentId)}
+                            </span>
+
+                            <span>
+                                Classification: ${safe(classification)}
+                            </span>
+
+                        </div>
+
+                        <div class="certificate360-document-action">
+
+                            ${
+                                downloadAllowed
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="certificate360-download"
+                                            disabled
+                                            title="Document download will be enabled through the authorized document service."
+                                        >
+                                            Download
+                                        </button>
+                                      `
+                                    : `
+                                        <span class="certificate360-no-access">
+                                            Access Restricted
+                                        </span>
+                                      `
+                            }
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </div>
+
+
+            <footer class="certificate360-footer">
+
+                <span>
+                    CCM • Certificate Management
+                </span>
+
+                <button
+                    type="button"
+                    class="certificate360-footer-close"
+                    id="certificate360FooterClose"
+                >
+                    Close
+                </button>
+
+            </footer>
+
+        </section>
+
+    `;
+
+
+    document.body.appendChild(modal);
+
+
+    /*
+       Close modal.
+    */
+
+    let closed = false;
+
+    const escapeHandler = event => {
+
+        if (event.key === "Escape") {
+            closeModal();
+        }
+
+    };
+
+
+    const closeModal = () => {
+
+        if (closed) {
+            return;
+        }
+
+        closed = true;
+
+        document.removeEventListener(
+            "keydown",
+            escapeHandler
+        );
+
+        modal.classList.add(
+            "certificate360-closing"
+        );
+
+        setTimeout(
+            () => {
+
+                if (modal.parentNode) {
+                    modal.remove();
+                }
+
+            },
+            150
+        );
+
+    };
+
+
+    const closeButton =
+        modal.querySelector(
+            "#certificate360Close"
+        );
+
+
+    const footerClose =
+        modal.querySelector(
+            "#certificate360FooterClose"
+        );
+
+
+    const backdrop =
+        modal.querySelector(
+            "[data-certificate360-close]"
+        );
+
+
+    if (closeButton) {
+        closeButton.addEventListener(
+            "click",
+            closeModal
+        );
+    }
+
+
+    if (footerClose) {
+        footerClose.addEventListener(
+            "click",
+            closeModal
+        );
+    }
+
+
+    if (backdrop) {
+        backdrop.addEventListener(
+            "click",
+            closeModal
+        );
+    }
+
+
+    document.addEventListener(
+        "keydown",
+        escapeHandler
+    );
+
+
+    requestAnimationFrame(
+        () => {
+            modal.classList.add(
+                "certificate360-visible"
+            );
+        }
     );
 
 }
-
 
 /* =========================================================
    CERTIFICATION EVENTS
