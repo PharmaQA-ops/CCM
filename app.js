@@ -22,7 +22,7 @@ const GOOGLE_CLIENT_ID =
    → Script ID
 */
 const CCM_SCRIPT_ID =
-    "1UkT27QuT7h98HNKHlseXJubYRlknWkTwtp1MYx5n60TYcvJYKJR8SAK";
+    "1U-kT27QuT7h98HNKHlseXJubYRIknWkTwtp1MYx5n60TYcvJYKJR8SAK";
 
 
 /*
