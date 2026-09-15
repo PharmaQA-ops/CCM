@@ -1850,13 +1850,12 @@ const certificateDocument =
                         <div class="certificate360-document-action">
 
                             ${
-                                downloadAllowed
+                                downloadAllowed && documentId !== "-"
                                     ? `
                                         <button
                                             type="button"
                                             class="certificate360-download"
-                                            disabled
-                                            title="Document download will be enabled through the authorized document service."
+                                            id="certificate360Download"
                                         >
                                             Download
                                         </button>
@@ -1899,6 +1898,98 @@ const certificateDocument =
 
 
     document.body.appendChild(modal);
+
+
+    /*
+       11H — SECURE DOCUMENT DOWNLOAD
+       Backend remains the authorization authority.
+    */
+
+    const downloadButton =
+        modal.querySelector(
+            "#certificate360Download"
+        );
+
+
+    if (downloadButton) {
+
+        downloadButton.addEventListener(
+            "click",
+            async () => {
+
+                if (
+                    !documentId ||
+                    documentId === "-"
+                ) {
+                    return;
+                }
+
+
+                const originalText =
+                    downloadButton.textContent;
+
+
+                downloadButton.disabled = true;
+                downloadButton.textContent =
+                    "Authorizing...";
+
+
+                try {
+
+                    const downloadResult =
+                        await ccmExecute(
+                            "documentDownload",
+                            {
+                                documentId:
+                                    documentId
+                            }
+                        );
+
+
+                    if (
+                        !downloadResult ||
+                        downloadResult.success !== true ||
+                        downloadResult.allowed !== true ||
+                        !downloadResult.url
+                    ) {
+                        throw new Error(
+                            downloadResult?.error ||
+                            "Document access was denied."
+                        );
+                    }
+
+
+                    window.open(
+                        downloadResult.url,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "CCM document download failed:",
+                        error
+                    );
+
+
+                    alert(
+                        error.message ||
+                        "Unable to open the document."
+                    );
+
+                } finally {
+
+                    downloadButton.disabled = false;
+                    downloadButton.textContent =
+                        originalText;
+
+                }
+
+            }
+        );
+
+    }
 
 
     /*
@@ -2317,15 +2408,49 @@ function openCCMApplication() {
     }
 
 
-   initNavigation();
-initMobileMenu();
+    /*
+       11H — Initialize application shell
+       after backend authentication succeeds.
+    */
 
-initializeCertificationOverview();
+    applyNavigationPermissions_();
 
-loadDashboard();
-loadCertificates();
+    initNavigation();
+    initMobileMenu();
+
+    initializeCertificationOverview();
+
+
+    /*
+       Load only data permitted for
+       the authenticated user.
+    */
+
+    if (
+        ccmHasPermission_(
+            "PERM-DASHBOARD-VIEW"
+        )
+    ) {
+        loadDashboard();
+    }
+
+
+    if (
+        ccmHasPermission_(
+            "PERM-CERT-VIEW"
+        ) ||
+        ccmHasPermission_(
+            "PERM-CERT-OWN-VIEW"
+        )
+    ) {
+        loadCertificates();
+    }
+
+
+    openAuthorizedDefaultPage_();
 
 }
+
 
 /* =========================================================
    LOGIN ERROR
@@ -2359,8 +2484,365 @@ function showLoginError(
 
 
 /* =========================================================
-   NAVIGATION
+   11H — RBAC NAVIGATION
 ========================================================= */
+
+const CCM_PAGE_PERMISSIONS = {
+
+    dashboard: [
+        "PERM-DASHBOARD-VIEW"
+    ],
+
+    certifications: [
+        "PERM-CERT-VIEW",
+        "PERM-CERT-OWN-VIEW"
+    ],
+
+    employees: [
+        "PERM-EMPLOYEE-VIEW"
+    ],
+
+    renewals: [
+        "PERM-RENEWAL-VIEW"
+    ],
+
+    documents: [
+        "PERM-DOCUMENT-PUBLIC",
+        "PERM-DOCUMENT-INTERNAL",
+        "PERM-DOCUMENT-CONFIDENTIAL",
+        "PERM-DOCUMENT-RESTRICTED"
+    ],
+
+    reports: [
+        "PERM-REPORT-VIEW"
+    ],
+
+    audit: [
+        "PERM-AUDIT-VIEW"
+    ],
+
+    settings: [
+        "PERM-RBAC-MANAGE"
+    ]
+
+};
+
+
+function ccmHasPermission_(
+    permission
+) {
+
+    const permissions =
+        Array.isArray(
+            window.CCM_PERMISSIONS
+        )
+            ? window.CCM_PERMISSIONS
+            : [];
+
+
+    return permissions.includes(
+        permission
+    );
+
+}
+
+
+function ccmHasAnyPermission_(
+    permissions
+) {
+
+    return (
+        Array.isArray(permissions) &&
+        permissions.some(
+            permission =>
+                ccmHasPermission_(
+                    permission
+                )
+        )
+    );
+
+}
+
+
+function isPageAuthorized_(
+    page
+) {
+
+    const required =
+        CCM_PAGE_PERMISSIONS[
+            page
+        ] || [];
+
+
+    return (
+        required.length === 0 ||
+        ccmHasAnyPermission_(
+            required
+        )
+    );
+
+}
+
+
+function applyNavigationPermissions_() {
+
+    const navItems =
+        document.querySelectorAll(
+            ".nav-item"
+        );
+
+
+    navItems.forEach(
+        item => {
+
+            const page =
+                String(
+                    item.dataset.page || ""
+                ).trim();
+
+
+            const required =
+                CCM_PAGE_PERMISSIONS[
+                    page
+                ] || [];
+
+
+            const allowed =
+                required.length === 0 ||
+                ccmHasAnyPermission_(
+                    required
+                );
+
+
+            item.hidden =
+                !allowed;
+
+
+            item.setAttribute(
+                "aria-hidden",
+                allowed
+                    ? "false"
+                    : "true"
+            );
+
+
+            if (!allowed) {
+
+                item.classList.remove(
+                    "active"
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+function navigateToPage_(
+    page,
+    clickedItem = null
+) {
+
+    if (
+        !page ||
+        !isPageAuthorized_(page)
+    ) {
+
+        console.warn(
+            "CCM navigation denied:",
+            page
+        );
+
+        return false;
+
+    }
+
+
+    const target =
+        document.getElementById(
+            page + "Page"
+        );
+
+
+    if (!target) {
+
+        console.warn(
+            "CCM page container not found:",
+            page + "Page"
+        );
+
+        return false;
+
+    }
+
+
+    document
+        .querySelectorAll(
+            ".nav-item"
+        )
+        .forEach(
+            nav => {
+
+                nav.classList.toggle(
+                    "active",
+                    nav.dataset.page === page
+                );
+
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            ".page"
+        )
+        .forEach(
+            section => {
+
+                section.classList.remove(
+                    "active-page"
+                );
+
+            }
+        );
+
+
+    target.classList.add(
+        "active-page"
+    );
+
+
+    const pageTitle =
+        document.getElementById(
+            "pageTitle"
+        );
+
+
+    const titleSource =
+        clickedItem ||
+        document.querySelector(
+            '.nav-item[data-page="' +
+            page +
+            '"]'
+        );
+
+
+    const title =
+        titleSource
+            ? titleSource.querySelector(
+                "span:last-child"
+            )
+            : null;
+
+
+    if (
+        title &&
+        pageTitle
+    ) {
+
+        pageTitle.textContent =
+            title.textContent.trim();
+
+    }
+
+
+    const sidebar =
+        document.getElementById(
+            "sidebar"
+        );
+
+
+    if (sidebar) {
+
+        sidebar.classList.remove(
+            "open"
+        );
+
+    }
+
+
+    /*
+       Page-specific live loading.
+       Backend RBAC remains authoritative.
+    */
+
+    switch (page) {
+
+        case "dashboard":
+
+            if (
+                ccmHasPermission_(
+                    "PERM-DASHBOARD-VIEW"
+                )
+            ) {
+                loadDashboard();
+            }
+
+            break;
+
+
+        case "certifications":
+
+            if (
+                ccmHasPermission_(
+                    "PERM-CERT-VIEW"
+                ) ||
+                ccmHasPermission_(
+                    "PERM-CERT-OWN-VIEW"
+                )
+            ) {
+                loadCertificates();
+            }
+
+            break;
+
+
+        default:
+            break;
+
+    }
+
+
+    return true;
+
+}
+
+
+function openAuthorizedDefaultPage_() {
+
+    const preferredPages = [
+        "dashboard",
+        "certifications",
+        "employees",
+        "renewals",
+        "documents",
+        "reports",
+        "audit",
+        "settings"
+    ];
+
+
+    const firstAuthorized =
+        preferredPages.find(
+            page =>
+                isPageAuthorized_(
+                    page
+                )
+        );
+
+
+    if (firstAuthorized) {
+
+        navigateToPage_(
+            firstAuthorized
+        );
+
+    }
+
+}
+
 
 function initNavigation() {
 
@@ -2370,107 +2852,45 @@ function initNavigation() {
         );
 
 
-    const pages =
-        document.querySelectorAll(
-            ".page"
-        );
-
-
-    const pageTitle =
-        document.getElementById(
-            "pageTitle"
-        );
-
-
     navItems.forEach(
         item => {
 
-            item.addEventListener(
-                "click",
-                () => {
-
-                    const page =
-                        item.dataset.page;
+            const cleanItem =
+                item.cloneNode(true);
 
 
-                    navItems.forEach(
-                        nav => {
-
-                            nav.classList.remove(
-                                "active"
-                            );
-
-                        }
-                    );
-
-
-                    item.classList.add(
-                        "active"
-                    );
-
-
-                    pages.forEach(
-                        section => {
-
-                            section.classList.remove(
-                                "active-page"
-                            );
-
-                        }
-                    );
-
-
-                    const target =
-                        document.getElementById(
-                            page + "Page"
-                        );
-
-
-                    if (target) {
-
-                        target.classList.add(
-                            "active-page"
-                        );
-
-                    }
-
-
-                    const title =
-                        item.querySelector(
-                            "span:last-child"
-                        );
-
-
-                    if (
-                        title &&
-                        pageTitle
-                    ) {
-
-                        pageTitle.textContent =
-                            title.textContent;
-
-                    }
-
-
-                    const sidebar =
-                        document.getElementById(
-                            "sidebar"
-                        );
-
-
-                    if (sidebar) {
-
-                        sidebar.classList.remove(
-                            "open"
-                        );
-
-                    }
-
-                }
+            item.replaceWith(
+                cleanItem
             );
 
         }
     );
+
+
+    document
+        .querySelectorAll(
+            ".nav-item"
+        )
+        .forEach(
+            item => {
+
+                item.addEventListener(
+                    "click",
+                    () => {
+
+                        navigateToPage_(
+                            item.dataset.page,
+                            item
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+    applyNavigationPermissions_();
 
 }
 
@@ -2501,6 +2921,20 @@ function initMobileMenu() {
         return;
 
     }
+
+
+    if (
+        menuButton.dataset.ccmMenuBound ===
+        "true"
+    ) {
+
+        return;
+
+    }
+
+
+    menuButton.dataset.ccmMenuBound =
+        "true";
 
 
     menuButton.addEventListener(
