@@ -588,6 +588,254 @@ async function loadDashboard() {
             data
         );
 
+/* =====================================================
+           KPI DATA
+        ===================================================== */
+
+        const kpi =
+            data.kpi || {};
+
+
+        setElementText(
+            "totalCertifications",
+            kpi.total ?? 0
+        );
+
+
+        setElementText(
+            "activeCertifications",
+            kpi.active ?? 0
+        );
+
+
+        setElementText(
+            "renewalCertifications",
+            kpi.renewal ?? 0
+        );
+
+
+        setElementText(
+            "expiredCertifications",
+            kpi.expired ?? 0
+        );
+
+
+        setElementText(
+            "mandatoryCertifications",
+            kpi.mandatory ?? 0
+        );
+
+
+        setElementText(
+            "complianceRate",
+            (kpi.compliance ?? 0) + "%"
+        );
+
+
+        /* =====================================================
+           EXPIRY RISK
+        ===================================================== */
+
+        const risk =
+            data.expiryRisk || {};
+
+
+        updateRiskRow(
+            "risk07",
+            "risk07Value",
+            risk["0-7"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk815",
+            "risk815Value",
+            risk["8-15"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk1630",
+            "risk1630Value",
+            risk["16-30"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk3160",
+            "risk3160Value",
+            risk["31-60"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk6190",
+            "risk6190Value",
+            risk["61-90"] || 0
+        );
+
+
+        updateRiskRow(
+            "risk90",
+            "risk90Value",
+            risk["90+"] || 0
+        );
+
+
+        updateRiskRow(
+            "riskExpired",
+            "riskExpiredValue",
+            risk["EXPIRED"] || 0
+        );
+
+
+        console.log(
+            "CCM: Live dashboard rendered successfully."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CCM dashboard loading failed:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SAFE TEXT UPDATE
+========================================================= */
+
+function setElementText(
+    elementId,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (element) {
+
+        element.textContent =
+            value;
+
+    }
+
+}
+
+
+/* =========================================================
+   UPDATE EXPIRY RISK ROW
+========================================================= */
+
+function updateRiskRow(
+    barId,
+    valueId,
+    value
+) {
+
+    const bar =
+        document.getElementById(
+            barId
+        );
+
+
+    const valueElement =
+        document.getElementById(
+            valueId
+        );
+
+
+    if (valueElement) {
+
+        valueElement.textContent =
+            value;
+
+    }
+
+
+    if (bar) {
+
+        /*
+           Width is relative to the largest
+           expiry-risk category.
+        */
+
+        const allRiskValues = [
+
+            getRiskValue("risk07Value"),
+            getRiskValue("risk815Value"),
+            getRiskValue("risk1630Value"),
+            getRiskValue("risk3160Value"),
+            getRiskValue("risk6190Value"),
+            getRiskValue("risk90Value"),
+            getRiskValue("riskExpiredValue")
+
+        ];
+
+
+        const maxValue =
+            Math.max(
+                ...allRiskValues,
+                1
+            );
+
+
+        const percentage =
+            Math.round(
+                (value / maxValue) * 100
+            );
+
+
+        bar.style.width =
+            percentage + "%";
+
+    }
+
+}
+
+
+/* =========================================================
+   GET RISK VALUE
+========================================================= */
+
+function getRiskValue(
+    elementId
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+
+    if (!element) {
+
+        return 0;
+
+    }
+
+
+    const value =
+        parseInt(
+            element.textContent,
+            10
+        );
+
+
+    return Number.isFinite(value)
+        ? value
+        : 0;
+
+}
+
 /* =========================================================
    CCM — STEP 11E
    CERTIFICATION OVERVIEW
@@ -1406,254 +1654,7 @@ function initializeCertificationOverview() {
     }
 
 }
-        /* =====================================================
-           KPI DATA
-        ===================================================== */
-
-        const kpi =
-            data.kpi || {};
-
-
-        setElementText(
-            "totalCertifications",
-            kpi.total ?? 0
-        );
-
-
-        setElementText(
-            "activeCertifications",
-            kpi.active ?? 0
-        );
-
-
-        setElementText(
-            "renewalCertifications",
-            kpi.renewal ?? 0
-        );
-
-
-        setElementText(
-            "expiredCertifications",
-            kpi.expired ?? 0
-        );
-
-
-        setElementText(
-            "mandatoryCertifications",
-            kpi.mandatory ?? 0
-        );
-
-
-        setElementText(
-            "complianceRate",
-            (kpi.compliance ?? 0) + "%"
-        );
-
-
-        /* =====================================================
-           EXPIRY RISK
-        ===================================================== */
-
-        const risk =
-            data.expiryRisk || {};
-
-
-        updateRiskRow(
-            "risk07",
-            "risk07Value",
-            risk["0-7"] || 0
-        );
-
-
-        updateRiskRow(
-            "risk815",
-            "risk815Value",
-            risk["8-15"] || 0
-        );
-
-
-        updateRiskRow(
-            "risk1630",
-            "risk1630Value",
-            risk["16-30"] || 0
-        );
-
-
-        updateRiskRow(
-            "risk3160",
-            "risk3160Value",
-            risk["31-60"] || 0
-        );
-
-
-        updateRiskRow(
-            "risk6190",
-            "risk6190Value",
-            risk["61-90"] || 0
-        );
-
-
-        updateRiskRow(
-            "risk90",
-            "risk90Value",
-            risk["90+"] || 0
-        );
-
-
-        updateRiskRow(
-            "riskExpired",
-            "riskExpiredValue",
-            risk["EXPIRED"] || 0
-        );
-
-
-        console.log(
-            "CCM: Live dashboard rendered successfully."
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "CCM dashboard loading failed:",
-            error
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   SAFE TEXT UPDATE
-========================================================= */
-
-function setElementText(
-    elementId,
-    value
-) {
-
-    const element =
-        document.getElementById(
-            elementId
-        );
-
-
-    if (element) {
-
-        element.textContent =
-            value;
-
-    }
-
-}
-
-
-/* =========================================================
-   UPDATE EXPIRY RISK ROW
-========================================================= */
-
-function updateRiskRow(
-    barId,
-    valueId,
-    value
-) {
-
-    const bar =
-        document.getElementById(
-            barId
-        );
-
-
-    const valueElement =
-        document.getElementById(
-            valueId
-        );
-
-
-    if (valueElement) {
-
-        valueElement.textContent =
-            value;
-
-    }
-
-
-    if (bar) {
-
-        /*
-           Width is relative to the largest
-           expiry-risk category.
-        */
-
-        const allRiskValues = [
-
-            getRiskValue("risk07Value"),
-            getRiskValue("risk815Value"),
-            getRiskValue("risk1630Value"),
-            getRiskValue("risk3160Value"),
-            getRiskValue("risk6190Value"),
-            getRiskValue("risk90Value"),
-            getRiskValue("riskExpiredValue")
-
-        ];
-
-
-        const maxValue =
-            Math.max(
-                ...allRiskValues,
-                1
-            );
-
-
-        const percentage =
-            Math.round(
-                (value / maxValue) * 100
-            );
-
-
-        bar.style.width =
-            percentage + "%";
-
-    }
-
-}
-
-
-/* =========================================================
-   GET RISK VALUE
-========================================================= */
-
-function getRiskValue(
-    elementId
-) {
-
-    const element =
-        document.getElementById(
-            elementId
-        );
-
-
-    if (!element) {
-
-        return 0;
-
-    }
-
-
-    const value =
-        parseInt(
-            element.textContent,
-            10
-        );
-
-
-    return Number.isFinite(value)
-        ? value
-        : 0;
-
-}
-
+        
 /* =========================================================
    CALL CCM BACKEND
 ========================================================= */
