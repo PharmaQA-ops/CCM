@@ -2587,198 +2587,229 @@ function isPageAuthorized_(
 function applyNavigationPermissions_() {
 
     const navItems =
-        document.querySelectorAll(".nav-item");
-
-    navItems.forEach(item => {
-
-        item.hidden = false;
-
-        item.removeAttribute(
-            "aria-hidden"
+        document.querySelectorAll(
+            ".nav-item"
         );
 
-    });
 
-    console.log(
-        "CCM: All navigation items displayed."
+    navItems.forEach(
+        item => {
+
+            const page =
+                String(
+                    item.dataset.page || ""
+                ).trim();
+
+
+            const required =
+                CCM_PAGE_PERMISSIONS[
+                    page
+                ] || [];
+
+
+            const allowed =
+                required.length === 0 ||
+                ccmHasAnyPermission_(
+                    required
+                );
+
+
+            item.hidden =
+                !allowed;
+
+
+            item.setAttribute(
+                "aria-hidden",
+                allowed
+                    ? "false"
+                    : "true"
+            );
+
+
+            if (!allowed) {
+
+                item.classList.remove(
+                    "active"
+                );
+
+            }
+
+        }
     );
+
 }
 
-/* =========================================================
-   CCM — FINAL NAVIGATION
-========================================================= */
 
-function navigateToPage_(page, clickedItem = null) {
+function navigateToPage_(
+    page,
+    clickedItem = null
+) {
 
-    page = String(page || "").trim();
+    if (
+        !page ||
+        !isPageAuthorized_(page)
+    ) {
 
-    if (!page) {
-        console.warn("CCM: Navigation page is empty.");
+        console.warn(
+            "CCM navigation denied:",
+            page
+        );
+
         return false;
+
     }
+
 
     const target =
-        document.getElementById(page + "Page");
-
-    if (!target) {
-        console.error(
-            "CCM: Page container not found:",
+        document.getElementById(
             page + "Page"
         );
+
+
+    if (!target) {
+
+        console.warn(
+            "CCM page container not found:",
+            page + "Page"
+        );
+
         return false;
+
     }
 
-    /*
-       UI navigation.
-       Backend remains the real RBAC authority.
-    */
 
     document
-        .querySelectorAll(".nav-item")
-        .forEach(nav => {
-            nav.classList.toggle(
-                "active",
-                String(nav.dataset.page || "") === page
-            );
-        });
+        .querySelectorAll(
+            ".nav-item"
+        )
+        .forEach(
+            nav => {
+
+                nav.classList.toggle(
+                    "active",
+                    nav.dataset.page === page
+                );
+
+            }
+        );
+
 
     document
-        .querySelectorAll(".page")
-        .forEach(section => {
-            section.classList.remove("active-page");
-        });
+        .querySelectorAll(
+            ".page"
+        )
+        .forEach(
+            section => {
 
-    target.classList.add("active-page");
+                section.classList.remove(
+                    "active-page"
+                );
 
-    /*
-       Update breadcrumb.
-    */
+            }
+        );
+
+
+    target.classList.add(
+        "active-page"
+    );
+
 
     const pageTitle =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
+
 
     const titleSource =
         clickedItem ||
         document.querySelector(
-            `.nav-item[data-page="${page}"]`
+            '.nav-item[data-page="' +
+            page +
+            '"]'
         );
+
 
     const title =
-        titleSource?.querySelector(
-            "span:last-child"
-        );
+        titleSource
+            ? titleSource.querySelector(
+                "span:last-child"
+            )
+            : null;
 
-    if (pageTitle && title) {
+
+    if (
+        title &&
+        pageTitle
+    ) {
+
         pageTitle.textContent =
             title.textContent.trim();
+
     }
 
-    /*
-       Close mobile sidebar.
-    */
 
-    document
-        .getElementById("sidebar")
-        ?.classList.remove("open");
+    const sidebar =
+        document.getElementById(
+            "sidebar"
+        );
+
+
+    if (sidebar) {
+
+        sidebar.classList.remove(
+            "open"
+        );
+
+    }
+
 
     /*
-       Load page data.
+       Page-specific live loading.
+       Backend RBAC remains authoritative.
     */
 
     switch (page) {
 
         case "dashboard":
-            loadDashboard();
+
+            if (
+                ccmHasPermission_(
+                    "PERM-DASHBOARD-VIEW"
+                )
+            ) {
+                loadDashboard();
+            }
+
             break;
+
 
         case "certifications":
-            loadCertificationsManagementPage_();
+
+            if (
+                ccmHasPermission_(
+                    "PERM-CERT-VIEW"
+                ) ||
+                ccmHasPermission_(
+                    "PERM-CERT-OWN-VIEW"
+                )
+            ) {
+                loadCertificates();
+            }
+
             break;
 
-        case "employees":
-            loadEmployeesPage_();
-            break;
-
-        case "renewals":
-            loadRenewalsPage_();
-            break;
-
-        case "documents":
-            loadDocumentsPage_();
-            break;
-
-        case "reports":
-            loadReportsPage_();
-            break;
-
-        case "audit":
-            loadAuditPage_();
-            break;
-
-        case "settings":
-            loadSettingsPage_();
-            break;
 
         default:
-            console.warn(
-                "CCM: Unknown navigation page:",
-                page
-            );
-            return false;
+            break;
+
     }
 
-    console.log(
-        "CCM: Navigation successful:",
-        page
-    );
 
     return true;
-}
-/*
-   Page-specific live loading.
-   Backend RBAC remains authoritative.
-*/
-
-switch (page) {
-
-    case "dashboard":
-
-        if (
-            ccmHasPermission_(
-                "PERM-DASHBOARD-VIEW"
-            )
-        ) {
-            loadDashboard();
-        }
-
-        break;
-
-
-    case "certifications":
-
-        if (
-            ccmHasPermission_(
-                "PERM-CERT-VIEW"
-            ) ||
-            ccmHasPermission_(
-                "PERM-CERT-OWN-VIEW"
-            )
-        ) {
-            loadCertificates();
-        }
-
-        break;
-
-
-    default:
-        break;
 
 }
 
 
-return true;
-
-}
 function openAuthorizedDefaultPage_() {
 
     const preferredPages = [
@@ -2813,55 +2844,57 @@ function openAuthorizedDefaultPage_() {
 }
 
 
-/* =========================================================
-   CCM — FINAL NAVIGATION BINDING
-========================================================= */
-
 function initNavigation() {
 
     const navItems =
-        document.querySelectorAll(".nav-item");
+        document.querySelectorAll(
+            ".nav-item"
+        );
 
-    console.log(
-        "CCM: Navigation items found:",
-        navItems.length
+
+    navItems.forEach(
+        item => {
+
+            const cleanItem =
+                item.cloneNode(true);
+
+
+            item.replaceWith(
+                cleanItem
+            );
+
+        }
     );
 
-    navItems.forEach(item => {
 
-        if (
-            item.dataset.ccmNavigationBound === "true"
-        ) {
-            return;
-        }
+    document
+        .querySelectorAll(
+            ".nav-item"
+        )
+        .forEach(
+            item => {
 
-        item.dataset.ccmNavigationBound = "true";
+                item.addEventListener(
+                    "click",
+                    () => {
 
-        item.addEventListener(
-            "click",
-            function(event) {
+                        navigateToPage_(
+                            item.dataset.page,
+                            item
+                        );
 
-                event.preventDefault();
-                event.stopPropagation();
-
-                const page =
-                    String(
-                        item.dataset.page || ""
-                    ).trim();
-
-                console.log(
-                    "CCM: NAV CLICK:",
-                    page
+                    }
                 );
 
-                navigateToPage_(
-                    page,
-                    item
-                );
             }
         );
-    });
+
+
+    applyNavigationPermissions_();
+
 }
+
+
 /* =========================================================
    MOBILE MENU
 ========================================================= */
@@ -3297,44 +3330,7 @@ function renderSettingsPage_(result) {
    ADD / EDIT CERTIFICATION
 ========================================================= */
 
-function openAddCertificateModal_() {
-    if (!ccmHasPermission_("PERM-CERT-CREATE")) {
-        ccmNotify_("You do not have permission to create certifications.", "error");
-        return;
-    }
-    const employees = Array.isArray(CCM_EMPLOYEES) && CCM_EMPLOYEES.length ? CCM_EMPLOYEES : [];
-    ccmOpenModal_("certificateFormModal", `
-        <div class="ccm-modal-header"><div><span class="eyebrow">CERTIFICATION CONTROL</span><h2>Add Certification</h2><p>Create a controlled certification record in the master register.</p></div><button type="button" class="ccm-modal-close" data-ccm-close>×</button></div>
-        <form id="certificateCreateForm" class="ccm-modal-body ccm-form">
-            <div class="ccm-form-grid">
-                <label>Employee<select name="Employee_ID" id="certificateEmployeeSelect" required><option value="">Select employee</option>${employees.map(e => `<option value="${escapeHtml(e.Employee_ID)}">${escapeHtml(e.Employee_ID + " — " + (e.Employee_Name || ""))}</option>`).join("")}</select></label>
-                <label>Employee Name<input name="Employee_Name" id="certificateEmployeeName" readonly></label>
-                <label>Department<input name="Department" id="certificateDepartment" readonly></label>
-                <label>Designation<input name="Designation" id="certificateDesignation" readonly></label>
-                <label>Certification Name<input name="Certification_Name" required placeholder="e.g. ISO 9001 Awareness"></label>
-                <label>Certification Category<input name="Certification_Category" placeholder="e.g. Quality / Safety / Security"></label>
-                <label>Issuing Body<input name="Issuing_Body" placeholder="Issuing organization"></label>
-                <label>Certificate Number<input name="Certificate_Number" placeholder="Certificate number"></label>
-                <label>Issue Date<input name="Issue_Date" type="date" required></label>
-                <label>Expiry Date<input name="Expiry_Date" type="date" required></label>
-                <label>Mandatory<select name="Mandatory"><option value="NO">NO</option><option value="YES">YES</option></select></label>
-                <label>Document ID<input name="Document_ID" placeholder="Optional document ID"></label>
-                <label class="ccm-form-wide">Remarks<textarea name="Remarks" rows="3" placeholder="Remarks / notes"></textarea></label>
-            </div>
-            <div id="certificateFormStatus" class="ccm-form-status"></div>
-        </form>
-        <div class="ccm-modal-footer"><button type="button" class="footer-button" data-ccm-close>Cancel</button><button type="submit" form="certificateCreateForm" class="primary-button" id="saveCertificateButton">Create Certification</button></div>
-    `);
-    const select = document.getElementById("certificateEmployeeSelect");
-    const fill = () => {
-        const e = employees.find(x => String(x.Employee_ID) === String(select?.value));
-        document.getElementById("certificateEmployeeName").value = e?.Employee_Name || "";
-        document.getElementById("certificateDepartment").value = e?.Department || "";
-        document.getElementById("certificateDesignation").value = e?.Designation || "";
-    };
-    select?.addEventListener("change", fill);
-    document.getElementById("certificateCreateForm")?.addEventListener("submit", submitCertificateCreate_);
-}
+
 
 async function openAddCertificateModal_() {
     if (!ccmHasPermission_("PERM-CERT-CREATE")) {
@@ -3617,145 +3613,6 @@ async function openAddCertificateModal_() {
             submitCertificateCreate_
         );
 }
-async function submitCertificateCreate_(event) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const button = document.getElementById("saveCertificateButton");
-    const status = document.getElementById("certificateFormStatus");
-
-    if (!form) {
-        return;
-    }
-
-    const data = Object.fromEntries(
-        new FormData(form).entries()
-    );
-
-    /*
-     * Basic client-side validation
-     */
-    if (!data.Employee_ID) {
-        if (status) {
-            status.textContent = "Please select an employee.";
-        }
-        return;
-    }
-
-    if (!data.Certification_Name) {
-        if (status) {
-            status.textContent = "Certification Name is required.";
-        }
-        return;
-    }
-
-    if (!data.Issue_Date) {
-        if (status) {
-            status.textContent = "Issue Date is required.";
-        }
-        return;
-    }
-
-    if (!data.Expiry_Date) {
-        if (status) {
-            status.textContent = "Expiry Date is required.";
-        }
-        return;
-    }
-
-    /*
-     * Prevent duplicate submission
-     */
-    if (button) {
-        button.disabled = true;
-        button.textContent = "Creating…";
-    }
-
-    if (status) {
-        status.textContent = "Creating certification record…";
-    }
-
-    try {
-        const result = await ccmSafeExecute_(
-            "createCertificate",
-            {
-                data: data
-            }
-        );
-
-        console.log(
-            "CCM certification creation result:",
-            result
-        );
-
-        if (!result || result.success !== true) {
-            throw new Error(
-                result?.error ||
-                "Certification could not be created."
-            );
-        }
-
-        /*
-         * Close form only after backend confirms success.
-         */
-        ccmCloseModal_(
-            "certificateFormModal"
-        );
-
-        ccmNotify_(
-            `Certification ${result.certificateId || ""} created successfully.`,
-            "success"
-        );
-
-        /*
-         * Refresh live certification data.
-         */
-        await loadCertificates();
-
-        /*
-         * Refresh dashboard KPIs.
-         */
-        if (
-            ccmHasPermission_(
-                "PERM-DASHBOARD-VIEW"
-            )
-        ) {
-            await loadDashboard();
-        }
-
-        /*
-         * Refresh certification management page
-         * if currently visible.
-         */
-        if (
-            document
-                .getElementById("certificationsPage")
-                ?.classList
-                .contains("active-page")
-        ) {
-            await loadCertificationsManagementPage_();
-        }
-
-    } catch (error) {
-
-        console.error(
-            "CCM certification creation failed:",
-            error
-        );
-
-        if (status) {
-            status.textContent =
-                error?.message ||
-                "Certification creation failed.";
-        }
-
-        if (button) {
-            button.disabled = false;
-            button.textContent =
-                "Create Certification";
-        }
-    }
-}
 async function openEditCertificateModal_(certificateId) {
     if (!ccmHasPermission_("PERM-CERT-EDIT")) {
         ccmNotify_("You do not have permission to edit certifications.", "error");
@@ -3937,37 +3794,7 @@ function wireCertificate360Download_(result) {
     button.addEventListener("click", () => downloadDocument_(doc.Document_ID));
 }
 
-/* =========================================================
-   NAVIGATION OVERRIDE
-========================================================= */
 
-function navigateToPage_(page, clickedItem = null) {
-    if (!page || !isPageAuthorized_(page)) {
-        ccmNotify_("You are not authorized to access this section.", "error");
-        return false;
-    }
-    const target = document.getElementById(page + "Page");
-    if (!target) return false;
-    document.querySelectorAll(".nav-item").forEach(nav => nav.classList.toggle("active", nav.dataset.page === page));
-    document.querySelectorAll(".page").forEach(section => section.classList.remove("active-page"));
-    target.classList.add("active-page");
-    const pageTitle = document.getElementById("pageTitle");
-    const titleSource = clickedItem || document.querySelector(`.nav-item[data-page="${page}"]`);
-    const title = titleSource?.querySelector("span:last-child");
-    if (pageTitle && title) pageTitle.textContent = title.textContent.trim();
-    document.getElementById("sidebar")?.classList.remove("open");
-    switch (page) {
-        case "dashboard": if (ccmHasPermission_("PERM-DASHBOARD-VIEW")) loadDashboard(); break;
-        case "certifications": loadCertificationsManagementPage_(); break;
-        case "employees": loadEmployeesPage_(); break;
-        case "renewals": loadRenewalsPage_(); break;
-        case "documents": loadDocumentsPage_(); break;
-        case "reports": loadReportsPage_(); break;
-        case "audit": loadAuditPage_(); break;
-        case "settings": loadSettingsPage_(); break;
-    }
-    return true;
-}
 
 function openAuthorizedDefaultPage_() {
     const pages = ["dashboard", "certifications", "employees", "renewals", "documents", "reports", "audit", "settings"];
@@ -4100,4 +3927,82 @@ function openCCMApplication() {
     if (ccmHasPermission_("PERM-CERT-VIEW") || ccmHasPermission_("PERM-CERT-OWN-VIEW")) loadCertificates();
     openAuthorizedDefaultPage_();
     setTimeout(wireDashboardActionsFinal_, 250);
+}
+
+/* =========================================================
+   CCM — CERTIFICATION CREATE SUBMIT
+========================================================= */
+
+async function submitCertificateCreate_(event) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const button = document.getElementById("saveCertificateButton");
+    const status = document.getElementById("certificateFormStatus");
+
+    if (!form) return;
+
+    const data = Object.fromEntries(new FormData(form).entries());
+
+    if (!data.Employee_ID) {
+        if (status) status.textContent = "Please select an employee.";
+        return;
+    }
+
+    if (!data.Certification_Name) {
+        if (status) status.textContent = "Certification Name is required.";
+        return;
+    }
+
+    if (!data.Issue_Date) {
+        if (status) status.textContent = "Issue Date is required.";
+        return;
+    }
+
+    if (!data.Expiry_Date) {
+        if (status) status.textContent = "Expiry Date is required.";
+        return;
+    }
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Creating…";
+    }
+
+    if (status) status.textContent = "Creating certification record…";
+
+    try {
+        const result = await ccmSafeExecute_("createCertificate", { data: data });
+
+        if (!result || result.success !== true) {
+            throw new Error(result?.error || "Certification could not be created.");
+        }
+
+        ccmCloseModal_("certificateFormModal");
+        ccmNotify_(
+            `Certification ${result.certificateId || ""} created successfully.`,
+            "success"
+        );
+
+        await loadCertificates();
+
+        if (ccmHasPermission_("PERM-DASHBOARD-VIEW")) {
+            await loadDashboard();
+        }
+
+        if (document.getElementById("certificationsPage")?.classList.contains("active-page")) {
+            await loadCertificationsManagementPage_();
+        }
+    } catch (error) {
+        console.error("CCM certification creation failed:", error);
+
+        if (status) {
+            status.textContent = error?.message || "Certification creation failed.";
+        }
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = "Create Certification";
+        }
+    }
 }
