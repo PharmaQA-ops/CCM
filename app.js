@@ -2640,129 +2640,136 @@ function applyNavigationPermissions_() {
 }
 
 
-function navigateToPage_(
-    page,
-    clickedItem = null
-) {
+/* =========================================================
+   CCM — FINAL NAVIGATION
+========================================================= */
 
-    if (
-        !page ||
-        !isPageAuthorized_(page)
-    ) {
+function navigateToPage_(page, clickedItem = null) {
 
-        console.warn(
-            "CCM navigation denied:",
-            page
-        );
+    page = String(page || "").trim();
 
+    if (!page) {
+        console.warn("CCM: Navigation page is empty.");
         return false;
-
     }
-
 
     const target =
-        document.getElementById(
-            page + "Page"
-        );
-
+        document.getElementById(page + "Page");
 
     if (!target) {
-
-        console.warn(
-            "CCM page container not found:",
+        console.error(
+            "CCM: Page container not found:",
             page + "Page"
         );
-
         return false;
-
     }
 
+    /*
+       UI navigation.
+       Backend remains the real RBAC authority.
+    */
 
     document
-        .querySelectorAll(
-            ".nav-item"
-        )
-        .forEach(
-            nav => {
-
-                nav.classList.toggle(
-                    "active",
-                    nav.dataset.page === page
-                );
-
-            }
-        );
-
+        .querySelectorAll(".nav-item")
+        .forEach(nav => {
+            nav.classList.toggle(
+                "active",
+                String(nav.dataset.page || "") === page
+            );
+        });
 
     document
-        .querySelectorAll(
-            ".page"
-        )
-        .forEach(
-            section => {
+        .querySelectorAll(".page")
+        .forEach(section => {
+            section.classList.remove("active-page");
+        });
 
-                section.classList.remove(
-                    "active-page"
-                );
+    target.classList.add("active-page");
 
-            }
-        );
-
-
-    target.classList.add(
-        "active-page"
-    );
-
+    /*
+       Update breadcrumb.
+    */
 
     const pageTitle =
-        document.getElementById(
-            "pageTitle"
-        );
-
+        document.getElementById("pageTitle");
 
     const titleSource =
         clickedItem ||
         document.querySelector(
-            '.nav-item[data-page="' +
-            page +
-            '"]'
+            `.nav-item[data-page="${page}"]`
         );
-
 
     const title =
-        titleSource
-            ? titleSource.querySelector(
-                "span:last-child"
-            )
-            : null;
+        titleSource?.querySelector(
+            "span:last-child"
+        );
 
-
-    if (
-        title &&
-        pageTitle
-    ) {
-
+    if (pageTitle && title) {
         pageTitle.textContent =
             title.textContent.trim();
-
     }
 
+    /*
+       Close mobile sidebar.
+    */
 
-    const sidebar =
-        document.getElementById(
-            "sidebar"
-        );
+    document
+        .getElementById("sidebar")
+        ?.classList.remove("open");
 
+    /*
+       Load page data.
+    */
 
-    if (sidebar) {
+    switch (page) {
 
-        sidebar.classList.remove(
-            "open"
-        );
+        case "dashboard":
+            loadDashboard();
+            break;
 
+        case "certifications":
+            loadCertificationsManagementPage_();
+            break;
+
+        case "employees":
+            loadEmployeesPage_();
+            break;
+
+        case "renewals":
+            loadRenewalsPage_();
+            break;
+
+        case "documents":
+            loadDocumentsPage_();
+            break;
+
+        case "reports":
+            loadReportsPage_();
+            break;
+
+        case "audit":
+            loadAuditPage_();
+            break;
+
+        case "settings":
+            loadSettingsPage_();
+            break;
+
+        default:
+            console.warn(
+                "CCM: Unknown navigation page:",
+                page
+            );
+            return false;
     }
 
+    console.log(
+        "CCM: Navigation successful:",
+        page
+    );
 
+    return true;
+}
     /*
        Page-specific live loading.
        Backend RBAC remains authoritative.
