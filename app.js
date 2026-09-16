@@ -3678,12 +3678,58 @@ async function submitCertificateEdit_(event) {
 async function loadCertificationsManagementPage_() {
     const page = document.getElementById("certificationsPage");
     if (!page) return;
-    page.innerHTML = ccmPageShell_("Certifications", "MASTER DATA", "Manage and review certification records.", `${ccmHasPermission_("PERM-CERT-CREATE") ? `<button type="button" class="primary-button" id="certPageAddButton">+ Add Certification</button>` : ""}`) + ccmPanel_(ccmLoading_());
+
+    // Render the management DOM first. The legacy loadCertificates()
+    // function targets the overview table, not certMgmtBody.
+    renderCertificationsManagementPage_();
+
+    const body = document.getElementById("certMgmtBody");
+    if (body) {
+        body.innerHTML =
+            `<tr><td colspan="9" class="table-loading">Loading certification records...</td></tr>`;
+    }
+
     try {
-        await loadCertificates();
-        renderCertificationsManagementPage_();
+        const result =
+            await ccmSafeExecute_("certificates", {});
+
+        if (!result || result.success !== true) {
+            throw new Error(
+                result?.error ||
+                "Certification records could not be loaded."
+            );
+        }
+
+        CCM_CERTIFICATES =
+            Array.isArray(result.data)
+                ? result.data
+                : [];
+
+        console.log(
+            "CCM: Certification management records loaded:",
+            CCM_CERTIFICATES
+        );
+
+        renderCertManagementRows_();
+
     } catch (error) {
-        page.innerHTML = ccmPageShell_("Certifications", "MASTER DATA", "Manage and review certification records.") + ccmPanel_(ccmError_(error.message || "Certificates could not be loaded.", "loadCertificationsManagementPage_()"));
+        console.error(
+            "CCM certification management loading failed:",
+            error
+        );
+
+        const errorBody =
+            document.getElementById("certMgmtBody");
+
+        if (errorBody) {
+            errorBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="table-error">
+                        Unable to load certification records.
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
