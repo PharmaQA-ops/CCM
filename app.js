@@ -2845,56 +2845,50 @@ function openAuthorizedDefaultPage_() {
 
 
 function initNavigation() {
-
     const navItems =
-        document.querySelectorAll(
-            ".nav-item"
-        );
+        document.querySelectorAll(".nav-item");
 
+    navItems.forEach(item => {
 
-    navItems.forEach(
-        item => {
+        // Prevent duplicate handlers
+        if (item.dataset.ccmNavigationBound === "true") {
+            return;
+        }
 
-            const cleanItem =
-                item.cloneNode(true);
+        item.dataset.ccmNavigationBound = "true";
 
+        item.addEventListener("click", function(event) {
 
-            item.replaceWith(
-                cleanItem
+            event.preventDefault();
+            event.stopPropagation();
+
+            const page =
+                String(
+                    item.dataset.page || ""
+                ).trim();
+
+            if (!page) {
+                console.warn(
+                    "CCM navigation item has no data-page:",
+                    item
+                );
+                return;
+            }
+
+            console.log(
+                "CCM navigation:",
+                page
             );
 
-        }
-    );
-
-
-    document
-        .querySelectorAll(
-            ".nav-item"
-        )
-        .forEach(
-            item => {
-
-                item.addEventListener(
-                    "click",
-                    () => {
-
-                        navigateToPage_(
-                            item.dataset.page,
-                            item
-                        );
-
-                    }
-                );
-
-            }
-        );
-
+            navigateToPage_(
+                page,
+                item
+            );
+        });
+    });
 
     applyNavigationPermissions_();
-
 }
-
-
 /* =========================================================
    MOBILE MENU
 ========================================================= */
