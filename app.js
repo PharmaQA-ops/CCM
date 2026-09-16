@@ -3369,37 +3369,287 @@ function openAddCertificateModal_() {
     document.getElementById("certificateCreateForm")?.addEventListener("submit", submitCertificateCreate_);
 }
 
-async function submitCertificateCreate_(event) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const btn = document.getElementById("saveCertificateButton");
-    const status = document.getElementById("certificateFormStatus");
-    const fd = new FormData(form);
-    const data = Object.fromEntries(fd.entries());
-    if (!data.Employee_ID || !data.Certification_Name || !data.Issue_Date || !data.Expiry_Date) {
-        if (status) status.textContent = "Employee, certification, issue date and expiry date are required.";
+async function openAddCertificateModal_() {
+    if (!ccmHasPermission_("PERM-CERT-CREATE")) {
+        ccmNotify_(
+            "You do not have permission to create certifications.",
+            "error"
+        );
         return;
     }
-    if (new Date(data.Expiry_Date) < new Date(data.Issue_Date)) {
-        if (status) status.textContent = "Expiry date cannot be before issue date.";
-        return;
-    }
-    if (btn) { btn.disabled = true; btn.textContent = "Creating…"; }
-    try {
-        const result = await ccmSafeExecute_("createCertificate", data);
-        ccmCloseModal_("certificateFormModal");
-        ccmNotify_(`Certification ${result.certificateId || ""} created successfully.`, "success");
-        await Promise.all([
-            ccmHasPermission_("PERM-DASHBOARD-VIEW") ? loadDashboard() : Promise.resolve(),
-            (ccmHasPermission_("PERM-CERT-VIEW") || ccmHasPermission_("PERM-CERT-OWN-VIEW")) ? loadCertificates() : Promise.resolve()
-        ]);
-        if (document.getElementById("certificationsPage")?.classList.contains("active-page")) await loadCertificationsManagementPage_();
-    } catch (error) {
-        if (status) status.textContent = error.message || "Certification could not be created.";
-        if (btn) { btn.disabled = false; btn.textContent = "Create Certification"; }
-    }
-}
 
+    let employees =
+        Array.isArray(CCM_EMPLOYEES)
+            ? CCM_EMPLOYEES
+            : [];
+
+    /*
+     * Ensure employee master data is available
+     * before opening the certification form.
+     */
+    if (!employees.length) {
+        try {
+            const result =
+                await ccmSafeExecute_(
+                    "employees",
+                    {}
+                );
+
+            employees =
+                Array.isArray(result.data)
+                    ? result.data
+                    : [];
+
+            CCM_EMPLOYEES = employees;
+            CCM_PAGE_CACHE.employees =
+                employees;
+
+        } catch (error) {
+            console.error(
+                "CCM employee loading for certificate form failed:",
+                error
+            );
+
+            ccmNotify_(
+                error.message ||
+                "Employee master data could not be loaded.",
+                "error"
+            );
+
+            return;
+        }
+    }
+
+    ccmOpenModal_(
+        "certificateFormModal",
+        `
+        <div class="ccm-modal-header">
+            <div>
+                <span class="eyebrow">
+                    CERTIFICATION CONTROL
+                </span>
+                <h2>Add Certification</h2>
+                <p>
+                    Create a controlled certification record
+                    in the master register.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="ccm-modal-close"
+                data-ccm-close
+            >×</button>
+        </div>
+
+        <form
+            id="certificateCreateForm"
+            class="ccm-modal-body ccm-form"
+        >
+            <div class="ccm-form-grid">
+
+                <label>
+                    Employee
+                    <select
+                        name="Employee_ID"
+                        id="certificateEmployeeSelect"
+                        required
+                    >
+                        <option value="">
+                            Select employee
+                        </option>
+
+                        ${employees.map(e => `
+                            <option
+                                value="${escapeHtml(
+                                    e.Employee_ID
+                                )}"
+                            >
+                                ${escapeHtml(
+                                    e.Employee_ID +
+                                    " — " +
+                                    (e.Employee_Name || "")
+                                )}
+                            </option>
+                        `).join("")}
+                    </select>
+                </label>
+
+                <label>
+                    Employee Name
+                    <input
+                        name="Employee_Name"
+                        id="certificateEmployeeName"
+                        readonly
+                    >
+                </label>
+
+                <label>
+                    Department
+                    <input
+                        name="Department"
+                        id="certificateDepartment"
+                        readonly
+                    >
+                </label>
+
+                <label>
+                    Designation
+                    <input
+                        name="Designation"
+                        id="certificateDesignation"
+                        readonly
+                    >
+                </label>
+
+                <label>
+                    Certification Name
+                    <input
+                        name="Certification_Name"
+                        required
+                        placeholder="e.g. ISO 9001 Awareness"
+                    >
+                </label>
+
+                <label>
+                    Certification Category
+                    <input
+                        name="Certification_Category"
+                        placeholder="e.g. Quality / Safety / Security"
+                    >
+                </label>
+
+                <label>
+                    Issuing Body
+                    <input
+                        name="Issuing_Body"
+                        placeholder="Issuing organization"
+                    >
+                </label>
+
+                <label>
+                    Certificate Number
+                    <input
+                        name="Certificate_Number"
+                        placeholder="Certificate number"
+                    >
+                </label>
+
+                <label>
+                    Issue Date
+                    <input
+                        name="Issue_Date"
+                        type="date"
+                        required
+                    >
+                </label>
+
+                <label>
+                    Expiry Date
+                    <input
+                        name="Expiry_Date"
+                        type="date"
+                        required
+                    >
+                </label>
+
+                <label>
+                    Mandatory
+                    <select name="Mandatory">
+                        <option value="NO">NO</option>
+                        <option value="YES">YES</option>
+                    </select>
+                </label>
+
+                <label>
+                    Document ID
+                    <input
+                        name="Document_ID"
+                        placeholder="Optional document ID"
+                    >
+                </label>
+
+                <label class="ccm-form-wide">
+                    Remarks
+                    <textarea
+                        name="Remarks"
+                        rows="3"
+                        placeholder="Remarks / notes"
+                    ></textarea>
+                </label>
+
+            </div>
+
+            <div
+                id="certificateFormStatus"
+                class="ccm-form-status"
+            ></div>
+        </form>
+
+        <div class="ccm-modal-footer">
+            <button
+                type="button"
+                class="footer-button"
+                data-ccm-close
+            >
+                Cancel
+            </button>
+
+            <button
+                type="submit"
+                form="certificateCreateForm"
+                class="primary-button"
+                id="saveCertificateButton"
+            >
+                Create Certification
+            </button>
+        </div>
+        `
+    );
+
+    const select =
+        document.getElementById(
+            "certificateEmployeeSelect"
+        );
+
+    const fill = () => {
+        const employee =
+            employees.find(
+                x =>
+                    String(x.Employee_ID) ===
+                    String(select?.value)
+            );
+
+        document.getElementById(
+            "certificateEmployeeName"
+        ).value =
+            employee?.Employee_Name || "";
+
+        document.getElementById(
+            "certificateDepartment"
+        ).value =
+            employee?.Department || "";
+
+        document.getElementById(
+            "certificateDesignation"
+        ).value =
+            employee?.Designation || "";
+    };
+
+    select?.addEventListener(
+        "change",
+        fill
+    );
+
+    document
+        .getElementById(
+            "certificateCreateForm"
+        )
+        ?.addEventListener(
+            "submit",
+            submitCertificateCreate_
+        );
+}
 async function openEditCertificateModal_(certificateId) {
     if (!ccmHasPermission_("PERM-CERT-EDIT")) {
         ccmNotify_("You do not have permission to edit certifications.", "error");
