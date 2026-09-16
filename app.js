@@ -2587,58 +2587,22 @@ function isPageAuthorized_(
 function applyNavigationPermissions_() {
 
     const navItems =
-        document.querySelectorAll(
-            ".nav-item"
+        document.querySelectorAll(".nav-item");
+
+    navItems.forEach(item => {
+
+        item.hidden = false;
+
+        item.removeAttribute(
+            "aria-hidden"
         );
 
+    });
 
-    navItems.forEach(
-        item => {
-
-            const page =
-                String(
-                    item.dataset.page || ""
-                ).trim();
-
-
-            const required =
-                CCM_PAGE_PERMISSIONS[
-                    page
-                ] || [];
-
-
-            const allowed =
-                required.length === 0 ||
-                ccmHasAnyPermission_(
-                    required
-                );
-
-
-            item.hidden =
-                !allowed;
-
-
-            item.setAttribute(
-                "aria-hidden",
-                allowed
-                    ? "false"
-                    : "true"
-            );
-
-
-            if (!allowed) {
-
-                item.classList.remove(
-                    "active"
-                );
-
-            }
-
-        }
+    console.log(
+        "CCM: All navigation items displayed."
     );
-
 }
-
 
 /* =========================================================
    CCM — FINAL NAVIGATION
@@ -2851,50 +2815,54 @@ function openAuthorizedDefaultPage_() {
 }
 
 
+/* =========================================================
+   CCM — FINAL NAVIGATION BINDING
+========================================================= */
+
 function initNavigation() {
+
     const navItems =
         document.querySelectorAll(".nav-item");
 
+    console.log(
+        "CCM: Navigation items found:",
+        navItems.length
+    );
+
     navItems.forEach(item => {
 
-        // Prevent duplicate handlers
-        if (item.dataset.ccmNavigationBound === "true") {
+        if (
+            item.dataset.ccmNavigationBound === "true"
+        ) {
             return;
         }
 
         item.dataset.ccmNavigationBound = "true";
 
-        item.addEventListener("click", function(event) {
+        item.addEventListener(
+            "click",
+            function(event) {
 
-            event.preventDefault();
-            event.stopPropagation();
+                event.preventDefault();
+                event.stopPropagation();
 
-            const page =
-                String(
-                    item.dataset.page || ""
-                ).trim();
+                const page =
+                    String(
+                        item.dataset.page || ""
+                    ).trim();
 
-            if (!page) {
-                console.warn(
-                    "CCM navigation item has no data-page:",
+                console.log(
+                    "CCM: NAV CLICK:",
+                    page
+                );
+
+                navigateToPage_(
+                    page,
                     item
                 );
-                return;
             }
-
-            console.log(
-                "CCM navigation:",
-                page
-            );
-
-            navigateToPage_(
-                page,
-                item
-            );
-        });
+        );
     });
-
-    applyNavigationPermissions_();
 }
 /* =========================================================
    MOBILE MENU
