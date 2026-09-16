@@ -2644,17 +2644,7 @@ function navigateToPage_(
     page,
     clickedItem = null
 ) {
-    page = String(page || "").trim();
-
-    if (!page) {
-        return false;
-    }
-
-    /*
-     * Frontend RBAC is a navigation gate only.
-     * The Apps Script backend remains authoritative.
-     */
-    if (!isPageAuthorized_(page)) {
+    if (!page || !isPageAuthorized_(page)) {
         ccmNotify_(
             "You are not authorized to access this section.",
             "error"
@@ -2663,41 +2653,67 @@ function navigateToPage_(
     }
 
     /*
-     * All CCM page containers already exist in index.html.
-     * Never create, replace, or move them here.
+     * The original HTML contains the Dashboard page container,
+     * while the other CCM pages are created dynamically.
+     *
+     * NEVER replace an existing page container before its loader
+     * runs. Dashboard and the legacy overview depend on their
+     * existing DOM IDs.
      */
-    const target =
-        document.getElementById(page + "Page");
-
-    if (!target) {
-        console.error(
-            "CCM navigation target missing:",
+    let target =
+        document.getElementById(
             page + "Page"
         );
 
-        ccmNotify_(
-            "CCM page is not available.",
-            "error"
-        );
+    if (!target) {
+        const dashboardPage =
+            document.getElementById(
+                "dashboardPage"
+            );
 
-        return false;
+        const pageHost =
+            dashboardPage?.parentElement ||
+            document.querySelector(
+                ".pages-container, .content, .main-content, main"
+            );
+
+        if (!pageHost) {
+            console.error(
+                "CCM page host not found."
+            );
+            ccmNotify_(
+                "CCM page container is unavailable.",
+                "error"
+            );
+            return false;
+        }
+
+        target =
+            document.createElement("section");
+
+        target.id =
+            page + "Page";
+
+        target.className =
+            "page";
+
+        pageHost.appendChild(
+            target
+        );
     }
 
     /*
-     * Active navigation state.
+     * Navigation state.
      */
     document
         .querySelectorAll(".nav-item")
-        .forEach(item => {
-            item.classList.toggle(
+        .forEach(nav => {
+            nav.classList.toggle(
                 "active",
-                item.dataset.page === page
+                nav.dataset.page === page
             );
         });
 
-    /*
-     * Page visibility.
-     */
     document
         .querySelectorAll(".page")
         .forEach(section => {
@@ -2706,13 +2722,14 @@ function navigateToPage_(
             );
         });
 
-    target.classList.add("active-page");
+    target.classList.add(
+        "active-page"
+    );
 
-    /*
-     * Breadcrumb.
-     */
     const pageTitle =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const titleSource =
         clickedItem ||
@@ -2730,25 +2747,23 @@ function navigateToPage_(
             title.textContent.trim();
     }
 
-    /*
-     * Mobile sidebar.
-     */
     document
         .getElementById("sidebar")
         ?.classList.remove("open");
 
     /*
-     * Immediate skeleton only for an empty page.
-     * Existing Dashboard/HTML containers are preserved.
+     * For dynamically-created pages, show the skeleton immediately.
+     * Existing pages are left intact until their own loader renders,
+     * preventing Dashboard from losing its required DOM.
      */
     if (
-        !target.children.length &&
-        typeof ccmLoading_ === "function"
+        target.childElementCount === 0
     ) {
         try {
             const label =
                 title?.textContent?.trim() ||
-                page;
+                page.charAt(0).toUpperCase() +
+                page.slice(1);
 
             target.innerHTML =
                 ccmPageShell_(
@@ -2772,18 +2787,22 @@ function navigateToPage_(
     }
 
     /*
-     * Live page loader.
+     * Page-specific live loader.
+     * RBAC is checked before navigation and the backend remains
+     * authoritative for every API operation.
      */
     let loader = null;
 
     switch (page) {
         case "dashboard":
-            loader =
+            if (
                 ccmHasPermission_(
                     "PERM-DASHBOARD-VIEW"
                 )
-                    ? loadDashboard
-                    : null;
+            ) {
+                loader =
+                    loadDashboard;
+            }
             break;
 
         case "certifications":
@@ -2820,19 +2839,17 @@ function navigateToPage_(
             loader =
                 loadSettingsPage_;
             break;
-
-        default:
-            console.warn(
-                "CCM: No loader registered for page:",
-                page
-            );
-            return true;
     }
 
-    if (typeof loader === "function") {
+    if (
+        typeof loader ===
+        "function"
+    ) {
         Promise
             .resolve()
-            .then(() => loader())
+            .then(() =>
+                loader()
+            )
             .catch(error => {
                 console.error(
                     "CCM page loader failed [" +
@@ -2842,30 +2859,29 @@ function navigateToPage_(
                 );
 
                 /*
-                 * Do not silently leave a blank page.
+                 * Do not leave the user on a blank screen.
+                 * The existing page is replaced only on an actual
+                 * loader failure.
                  */
                 try {
-                    if (
-                        typeof ccmError_ ===
-                        "function"
-                    ) {
-                        target.innerHTML =
-                            ccmPageShell_(
-                                title?.textContent?.trim() ||
-                                page,
-                                "CCM",
-                                "Unable to load live data."
-                            ) +
-                            ccmPanel_(
-                                ccmError_(
-                                    error?.message ||
-                                    "The page could not be loaded."
-                                )
-                            );
-                    }
-                } catch (renderError) {
+                    target.innerHTML =
+                        ccmPageShell_(
+                            title?.textContent?.trim() ||
+                            page,
+                            "CCM",
+                            "Unable to load live data."
+                        ) +
+                        ccmPanel_(
+                            ccmError_(
+                                error?.message ||
+                                "The page could not be loaded."
+                            )
+                        );
+                } catch (
+                    renderError
+                ) {
                     console.error(
-                        "CCM error renderer failed:",
+                        "CCM page error renderer failed:",
                         renderError
                     );
                 }
@@ -2910,47 +2926,55 @@ function openAuthorizedDefaultPage_() {
 
 
 function initNavigation() {
-    const sidebar =
-        document.getElementById("sidebar");
 
-    if (!sidebar) {
-        console.error("CCM: Sidebar not found.");
-        return;
-    }
+    const navItems =
+        document.querySelectorAll(
+            ".nav-item"
+        );
 
-    /*
-     * ONE delegated listener for the entire sidebar.
-     * This survives page re-renders and prevents duplicate handlers.
-     */
-    if (sidebar.dataset.ccmNavigationBound === "true") {
-        return;
-    }
 
-    sidebar.dataset.ccmNavigationBound = "true";
+    navItems.forEach(
+        item => {
 
-    sidebar.addEventListener("click", function(event) {
-        const item =
-            event.target.closest(".nav-item");
+            const cleanItem =
+                item.cloneNode(true);
 
-        if (!item || !sidebar.contains(item)) {
-            return;
+
+            item.replaceWith(
+                cleanItem
+            );
+
         }
+    );
 
-        event.preventDefault();
-        event.stopPropagation();
 
-        const page =
-            String(item.dataset.page || "").trim();
+    document
+        .querySelectorAll(
+            ".nav-item"
+        )
+        .forEach(
+            item => {
 
-        if (!page) {
-            return;
-        }
+                item.addEventListener(
+                    "click",
+                    () => {
 
-        navigateToPage_(page, item);
-    });
+                        navigateToPage_(
+                            item.dataset.page,
+                            item
+                        );
+
+                    }
+                );
+
+            }
+        );
+
 
     applyNavigationPermissions_();
+
 }
+
 
 /* =========================================================
    MOBILE MENU
@@ -4244,3 +4268,316 @@ async function submitCertificateCreate_(event) {
         }
     }
 }
+
+
+/* =========================================================
+   CCM 12.0 — FINAL NAVIGATION / PAGE LOADER OVERRIDE
+   Single delegated navigation handler.
+   Backend RBAC remains authoritative.
+========================================================= */
+
+function initNavigation() {
+    const sidebar = document.getElementById("sidebar");
+
+    if (!sidebar) {
+        console.error("CCM: sidebar not found.");
+        return;
+    }
+
+    if (sidebar.dataset.ccmNavigationBound === "true") {
+        applyNavigationPermissions_();
+        return;
+    }
+
+    sidebar.dataset.ccmNavigationBound = "true";
+
+    sidebar.addEventListener("click", function (event) {
+        const item = event.target.closest(".nav-item");
+
+        if (!item || !sidebar.contains(item)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const page = String(item.dataset.page || "").trim();
+
+        if (!page) {
+            console.warn("CCM: navigation item has no data-page.");
+            return;
+        }
+
+        console.log("CCM: NAV CLICK:", page);
+
+        /*
+         * Do not make the frontend RBAC cache the final authority.
+         * Backend API permissions remain authoritative.
+         */
+        navigateToPage_(page, item);
+    });
+
+    applyNavigationPermissions_();
+
+    console.log(
+        "CCM: navigation initialized. Items:",
+        sidebar.querySelectorAll(".nav-item").length
+    );
+}
+
+
+function applyNavigationPermissions_() {
+    const navItems = document.querySelectorAll(".nav-item");
+    const permissions = Array.isArray(window.CCM_PERMISSIONS)
+        ? window.CCM_PERMISSIONS
+        : [];
+
+    /*
+     * If authentication has not populated permissions yet,
+     * do not hide the navigation. Backend remains authoritative.
+     */
+    if (!permissions.length) {
+        navItems.forEach(item => {
+            item.hidden = false;
+            item.removeAttribute("aria-hidden");
+        });
+        return;
+    }
+
+    navItems.forEach(item => {
+        const page = String(item.dataset.page || "").trim();
+        const required = CCM_PAGE_PERMISSIONS[page] || [];
+
+        const allowed =
+            required.length === 0 ||
+            required.some(permission => permissions.includes(permission));
+
+        item.hidden = !allowed;
+        item.setAttribute("aria-hidden", allowed ? "false" : "true");
+
+        if (!allowed) {
+            item.classList.remove("active");
+        }
+    });
+}
+
+
+function navigateToPage_(page, clickedItem = null) {
+    page = String(page || "").trim();
+
+    if (!page) {
+        console.warn("CCM: empty navigation page.");
+        return false;
+    }
+
+    const target = document.getElementById(page + "Page");
+
+    if (!target) {
+        console.error(
+            "CCM: page container not found:",
+            page + "Page"
+        );
+        ccmNotify_(
+            "CCM page container is unavailable: " + page,
+            "error"
+        );
+        return false;
+    }
+
+    /*
+     * Navigation itself is local.
+     * The backend enforces permission when the loader calls the API.
+     */
+    document.querySelectorAll(".nav-item").forEach(nav => {
+        nav.classList.toggle(
+            "active",
+            String(nav.dataset.page || "").trim() === page
+        );
+    });
+
+    document.querySelectorAll(".page").forEach(section => {
+        section.classList.remove("active-page");
+    });
+
+    target.classList.add("active-page");
+
+    const pageTitle = document.getElementById("pageTitle");
+
+    const titleSource =
+        clickedItem ||
+        document.querySelector(
+            `.nav-item[data-page="${page}"]`
+        );
+
+    const title =
+        titleSource
+            ? titleSource.querySelector("span:last-child")
+            : null;
+
+    if (pageTitle && title) {
+        pageTitle.textContent = title.textContent.trim();
+    }
+
+    document.getElementById("sidebar")?.classList.remove("open");
+
+    console.log("CCM: loading page:", page);
+
+    let loader = null;
+
+    switch (page) {
+        case "dashboard":
+            loader = loadDashboard;
+            break;
+
+        case "certifications":
+            loader = loadCertificationsManagementPage_;
+            break;
+
+        case "employees":
+            loader = loadEmployeesPage_;
+            break;
+
+        case "renewals":
+            loader = loadRenewalsPage_;
+            break;
+
+        case "documents":
+            loader = loadDocumentsPage_;
+            break;
+
+        case "reports":
+            loader = loadReportsPage_;
+            break;
+
+        case "audit":
+            loader = loadAuditPage_;
+            break;
+
+        case "settings":
+            loader = loadSettingsPage_;
+            break;
+
+        default:
+            console.warn("CCM: unknown page:", page);
+            return false;
+    }
+
+    if (typeof loader !== "function") {
+        console.error(
+            "CCM: page loader missing:",
+            page
+        );
+        ccmNotify_(
+            "Page loader is unavailable: " + page,
+            "error"
+        );
+        return false;
+    }
+
+    Promise.resolve()
+        .then(() => loader())
+        .catch(error => {
+            console.error(
+                "CCM: page loader failed:",
+                page,
+                error
+            );
+        });
+
+    return true;
+}
+
+
+function openAuthorizedDefaultPage_() {
+    const pages = [
+        "dashboard",
+        "certifications",
+        "employees",
+        "renewals",
+        "documents",
+        "reports",
+        "audit",
+        "settings"
+    ];
+
+    /*
+     * Prefer dashboard when available.
+     * If the frontend permission cache is empty, still open dashboard;
+     * the backend will enforce access during the API call.
+     */
+    const permissions = Array.isArray(window.CCM_PERMISSIONS)
+        ? window.CCM_PERMISSIONS
+        : [];
+
+    const page = permissions.length
+        ? pages.find(isPageAuthorized_)
+        : "dashboard";
+
+    if (page) {
+        navigateToPage_(page);
+    }
+}
+
+
+function wireAllCCMUI_() {
+    applyNavigationPermissions_();
+    initNavigation();
+    initMobileMenu();
+    initializeCertificationOverview();
+    wireDashboardActions_();
+    wireDashboardActionsFinal_();
+    wireProfileMenu_();
+
+    document
+        .querySelectorAll('.icon-button[title="Notifications"]')
+        .forEach(btn => {
+            if (btn.dataset.bound === "true") {
+                return;
+            }
+
+            btn.dataset.bound = "true";
+
+            btn.addEventListener("click", () => {
+                navigateToPage_("renewals");
+            });
+        });
+
+    console.log("CCM: UI wiring complete.");
+}
+
+
+function openCCMApplication() {
+    const loginScreen =
+        document.getElementById("loginScreen");
+
+    if (loginScreen) {
+        loginScreen.style.display = "none";
+    }
+
+    /*
+     * Authentication has already completed here.
+     * Permissions are populated by authenticateCCMBackend().
+     */
+    applyNavigationPermissions_();
+    wireAllCCMUI_();
+
+    openAuthorizedDefaultPage_();
+
+    /*
+     * Keep dashboard/overview actions wired after the initial
+     * dynamic render.
+     */
+    setTimeout(() => {
+        wireDashboardActions_();
+        wireDashboardActionsFinal_();
+    }, 250);
+
+    console.log(
+        "CCM: application opened.",
+        {
+            permissions: window.CCM_PERMISSIONS || [],
+            user: window.CCM_CURRENT_USER || null
+        }
+    );
+}
+
