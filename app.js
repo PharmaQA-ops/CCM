@@ -3013,7 +3013,131 @@ function ccmPanel_(html, extraClass = "") {
 }
 
 function ccmLoading_(message = "Loading live data…") {
-    return `<div class="ccm-loading-state"><span class="ccm-spinner"></span><span>${escapeHtml(message)}</span></div>`;
+    /*
+     * CCM SKELETON LOADING
+     * Self-contained so the loader does not depend on a CSS patch.
+     */
+    return `
+        <style>
+            @keyframes ccmSkeletonPulse {
+                0%, 100% { opacity: .52; }
+                50% { opacity: 1; }
+            }
+
+            .ccm-skeleton-wrap {
+                width: 100%;
+                min-height: 280px;
+            }
+
+            .ccm-skeleton-status {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 22px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #64748b;
+            }
+
+            .ccm-skeleton-spinner {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #dbe4ee;
+                border-top-color: #173b61;
+                border-radius: 50%;
+                animation: ccmSkeletonSpin .8s linear infinite;
+            }
+
+            @keyframes ccmSkeletonSpin {
+                to { transform: rotate(360deg); }
+            }
+
+            .ccm-skeleton-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
+                margin-bottom: 22px;
+            }
+
+            .ccm-skeleton-card {
+                height: 92px;
+                border-radius: 12px;
+                background: linear-gradient(
+                    90deg,
+                    #edf2f7 25%,
+                    #f8fafc 50%,
+                    #edf2f7 75%
+                );
+                background-size: 200% 100%;
+                animation: ccmSkeletonWave 1.35s ease-in-out infinite;
+            }
+
+            .ccm-skeleton-lines {
+                display: grid;
+                gap: 12px;
+            }
+
+            .ccm-skeleton-line {
+                height: 16px;
+                border-radius: 6px;
+                background: linear-gradient(
+                    90deg,
+                    #edf2f7 25%,
+                    #f8fafc 50%,
+                    #edf2f7 75%
+                );
+                background-size: 200% 100%;
+                animation: ccmSkeletonWave 1.35s ease-in-out infinite;
+            }
+
+            .ccm-skeleton-line:nth-child(1) { width: 96%; }
+            .ccm-skeleton-line:nth-child(2) { width: 88%; }
+            .ccm-skeleton-line:nth-child(3) { width: 93%; }
+            .ccm-skeleton-line:nth-child(4) { width: 82%; }
+            .ccm-skeleton-line:nth-child(5) { width: 90%; }
+            .ccm-skeleton-line:nth-child(6) { width: 76%; }
+
+            @keyframes ccmSkeletonWave {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+
+            @media (max-width: 900px) {
+                .ccm-skeleton-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+            }
+
+            @media (max-width: 560px) {
+                .ccm-skeleton-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+
+        <div class="ccm-skeleton-wrap" role="status" aria-live="polite">
+            <div class="ccm-skeleton-status">
+                <span class="ccm-skeleton-spinner"></span>
+                <span>${escapeHtml(message)}</span>
+            </div>
+
+            <div class="ccm-skeleton-grid">
+                <div class="ccm-skeleton-card"></div>
+                <div class="ccm-skeleton-card"></div>
+                <div class="ccm-skeleton-card"></div>
+                <div class="ccm-skeleton-card"></div>
+            </div>
+
+            <div class="ccm-skeleton-lines">
+                <div class="ccm-skeleton-line"></div>
+                <div class="ccm-skeleton-line"></div>
+                <div class="ccm-skeleton-line"></div>
+                <div class="ccm-skeleton-line"></div>
+                <div class="ccm-skeleton-line"></div>
+                <div class="ccm-skeleton-line"></div>
+            </div>
+        </div>
+    `;
 }
 
 function ccmError_(message, retryAction = "") {
@@ -3681,7 +3805,18 @@ async function loadCertificationsManagementPage_() {
 
     // Render the management DOM first. The legacy loadCertificates()
     // function targets the overview table, not certMgmtBody.
-    renderCertificationsManagementPage_();
+    page.innerHTML =
+        ccmPageShell_(
+            "Certifications",
+            "MASTER DATA",
+            "Manage and review certification records.",
+            ccmHasPermission_("PERM-CERT-CREATE")
+                ? `<button type="button" class="primary-button" id="certPageAddButton">+ Add Certification</button>`
+                : ""
+        ) +
+        ccmPanel_(
+            ccmLoading_("Loading certification records…")
+        );
 
     const body = document.getElementById("certMgmtBody");
     if (body) {
