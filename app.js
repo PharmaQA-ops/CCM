@@ -4737,3 +4737,189 @@ function initNavigation() {
         document.querySelectorAll('.nav-item').length
     );
 }
+
+
+/* =========================================================
+   CCM 12.0 — FINAL NAV CONTENT RENDERER
+   Purpose: API is working; render every navigation section
+   with visible, dashboard-style live content.
+   Backend unchanged. Existing login/RBAC preserved.
+========================================================= */
+
+(function () {
+    const styleId = 'ccm-final-nav-content-style';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            .ccm-final-page-content{width:100%;box-sizing:border-box;padding:4px 0 28px;color:#10243b}
+            .ccm-final-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:0 0 18px}
+            .ccm-final-kpi{background:#fff;border:1px solid #dbe4ee;border-radius:14px;padding:18px;box-shadow:0 4px 16px rgba(15,39,64,.06)}
+            .ccm-final-kpi span{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#718096;margin-bottom:8px}
+            .ccm-final-kpi strong{display:block;font-size:28px;line-height:1.1;color:#173b61}
+            .ccm-final-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:18px}
+            .ccm-final-card{background:#fff;border:1px solid #dbe4ee;border-radius:14px;box-shadow:0 4px 16px rgba(15,39,64,.06);overflow:hidden;margin-bottom:18px}
+            .ccm-final-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #e6edf4}
+            .ccm-final-card-head h3{margin:0;font-size:16px;color:#173b61}
+            .ccm-final-card-head span{font-size:12px;color:#718096}
+            .ccm-final-card-body{padding:16px 18px}
+            .ccm-final-table-wrap{overflow:auto}
+            .ccm-final-table{width:100%;border-collapse:collapse;min-width:680px;background:#fff}
+            .ccm-final-table th{padding:11px 13px;text-align:left;background:#f4f7fa;color:#526579;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #dbe4ee;white-space:nowrap}
+            .ccm-final-table td{padding:12px 13px;border-bottom:1px solid #edf2f7;font-size:13px;color:#26384b;vertical-align:top}
+            .ccm-final-table tr:last-child td{border-bottom:0}
+            .ccm-final-badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef3f8;color:#38536d;font-size:11px;font-weight:700}
+            .ccm-final-badge.ok{background:#e9f7ef;color:#1d7545}.ccm-final-badge.warn{background:#fff5dc;color:#8a6510}.ccm-final-badge.bad{background:#fdebec;color:#a62d35}
+            .ccm-final-empty{padding:36px;text-align:center;color:#718096;font-size:13px}
+            .ccm-final-bar{height:9px;background:#edf2f7;border-radius:999px;overflow:hidden}.ccm-final-bar i{display:block;height:100%;background:#2d6a9f;border-radius:999px}
+            .ccm-final-list{display:grid;gap:11px}.ccm-final-list-row{display:flex;align-items:center;justify-content:space-between;gap:14px}.ccm-final-list-row span{font-size:13px;color:#526579}.ccm-final-list-row strong{font-size:13px;color:#173b61}
+            .ccm-final-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}.ccm-final-toolbar input,.ccm-final-toolbar select{border:1px solid #d4dee8;border-radius:9px;padding:9px 11px;background:#fff;color:#24384d;min-width:180px}
+            .ccm-final-action{border:0;border-radius:8px;padding:8px 11px;background:#173b61;color:#fff;font-weight:700;cursor:pointer}.ccm-final-action.secondary{background:#edf3f8;color:#173b61}
+            @media(max-width:1000px){.ccm-final-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ccm-final-grid{grid-template-columns:1fr}}
+            @media(max-width:600px){.ccm-final-kpis{grid-template-columns:1fr}.ccm-final-toolbar input,.ccm-final-toolbar select{width:100%;min-width:0}}
+        `;
+        document.head.appendChild(style);
+    }
+
+    function esc(v) {
+        if (typeof escapeHtml === 'function') return escapeHtml(String(v ?? ''));
+        return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    }
+
+    function val(obj, keys, fallback='—') {
+        for (const k of keys) {
+            if (obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+        }
+        return fallback;
+    }
+
+    function arrayFrom(data) {
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.data)) return data.data;
+        if (Array.isArray(data?.rows)) return data.rows;
+        if (Array.isArray(data?.records)) return data.records;
+        return [];
+    }
+
+    function badge(v) {
+        const s = String(v ?? '—');
+        const u = s.toUpperCase();
+        const cls = /EXPIRED|DENIED|FAILED|INACTIVE|RESTRICTED/.test(u) ? 'bad' : /DUE|URGENT|PENDING|WARNING|UPCOMING/.test(u) ? 'warn' : /ACTIVE|VALID|SUCCESS|SENT|COMPLIANT|ALLOWED/.test(u) ? 'ok' : '';
+        return `<span class="ccm-final-badge ${cls}">${esc(s)}</span>`;
+    }
+
+    function pageHeading(title, eyebrow, description, action='') {
+        return `<div class="page-heading"><div><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(description)}</p></div>${action}</div>`;
+    }
+
+    function card(title, body, meta='') {
+        return `<section class="ccm-final-card"><div class="ccm-final-card-head"><h3>${esc(title)}</h3><span>${esc(meta)}</span></div><div class="ccm-final-card-body">${body}</div></section>`;
+    }
+
+    function kpi(label, value) {
+        return `<div class="ccm-final-kpi"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+    }
+
+    function table(rows, preferred, empty='No live records available.') {
+        if (!rows.length) return `<div class="ccm-final-empty">${esc(empty)}</div>`;
+        const keys = preferred.filter(k => rows.some(r => r && Object.prototype.hasOwnProperty.call(r,k))).slice(0,8);
+        const actual = keys.length ? keys : Object.keys(rows[0] || {}).slice(0,8);
+        return `<div class="ccm-final-table-wrap"><table class="ccm-final-table"><thead><tr>${actual.map(k=>`<th>${esc(k.replace(/_/g,' '))}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${actual.map(k=>`<td>${typeof r?.[k] === 'object' ? esc(JSON.stringify(r[k])) : esc(r?.[k] ?? '—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    }
+
+    function renderCollectionPage_(pageId, title, eyebrow, description, rows, opts={}) {
+        const page = document.getElementById(pageId + 'Page');
+        if (!page) return;
+        const total = rows.length;
+        const active = rows.filter(r => /ACTIVE|VALID|COMPLIANT|SENT|ALLOWED/i.test(String(val(r,['Status','Compliance_Status','Access','Result'],'') ))).length;
+        const expiring = rows.filter(r => /DUE|UPCOMING|EXPIR/i.test(String(val(r,['Status','Renewal_Status','Certification_Status'],'') ))).length;
+        const action = opts.action || '';
+        const cols = opts.columns || ['ID','Name','Status','Department','Date','Expiry_Date'];
+        page.innerHTML = `<div class="ccm-final-page-content">${pageHeading(title,eyebrow,description,action)}<div class="ccm-final-kpis">${kpi('Total Records',total)}${kpi('Active / Valid',active)}${kpi('Due / Upcoming',expiring)}${kpi('Last Refresh',new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))}</div>${card(opts.tableTitle || `${title} Register`, table(rows,cols), `${total} live record${total===1?'':'s'}`)}</div>`;
+        if (opts.after) opts.after(page, rows);
+    }
+
+    function renderDocuments(rows) {
+        const page=document.getElementById('documentsPage'); if(!page)return;
+        const publicCount=rows.filter(r=>String(r.Classification||'').toUpperCase()==='PUBLIC').length;
+        const restricted=rows.filter(r=>/RESTRICTED|CONFIDENTIAL|EMPLOYEE_PRIVATE/i.test(String(r.Classification||''))).length;
+        page.innerHTML=`<div class="ccm-final-page-content">${pageHeading('Documents','DOCUMENT CONTROL','Controlled certification documents.','<button type="button" class="ccm-final-action secondary" id="ccmDocRefresh">Refresh ↻</button>')}<div class="ccm-final-kpis">${kpi('Accessible Documents',rows.length)}${kpi('Public',publicCount)}${kpi('Restricted',restricted)}${kpi('With Download',rows.filter(r=>r.Download_Allowed).length)}</div>${card('Document Register',`<div class="ccm-final-toolbar"><input id="ccmDocSearch" type="search" placeholder="Search document, certificate…"><select id="ccmDocClass"><option value="">All classifications</option><option>PUBLIC</option><option>INTERNAL</option><option>CONFIDENTIAL</option><option>RESTRICTED</option><option>EMPLOYEE_PRIVATE</option></select></div><div id="ccmDocTable"></div>`,`${rows.length} live records`)}</div>`;
+        const draw=()=>{const q=String(document.getElementById('ccmDocSearch')?.value||'').toLowerCase();const c=String(document.getElementById('ccmDocClass')?.value||'');const filtered=rows.filter(r=>(!c||String(r.Classification||'')===c)&&JSON.stringify(r).toLowerCase().includes(q));document.getElementById('ccmDocTable').innerHTML=table(filtered,['Document_Name','Document_ID','Certificate_ID','Classification','Login_Required','Status','Download_Allowed'],'No accessible documents.');};
+        draw(); document.getElementById('ccmDocSearch')?.addEventListener('input',draw); document.getElementById('ccmDocClass')?.addEventListener('change',draw); document.getElementById('ccmDocRefresh')?.addEventListener('click',()=>renderPageDirect_('documents'));
+    }
+
+    function renderReports(data) {
+        const page=document.getElementById('reportsPage'); if(!page)return;
+        const r=data||{}; const cats=r.byCategory||{}, deps=r.byDepartment||{}, issuers=r.byIssuer||{};
+        const list=(obj)=>{const entries=Object.entries(obj); if(!entries.length)return '<div class="ccm-final-empty">No data.</div>';const max=Math.max(...entries.map(x=>Number(x[1])||0),1);return `<div class="ccm-final-list">${entries.map(([k,v])=>`<div><div class="ccm-final-list-row"><span>${esc(k)}</span><strong>${esc(v)}</strong></div><div class="ccm-final-bar"><i style="width:${Math.round((Number(v)||0)/max*100)}%"></i></div></div>`).join('')}</div>`;};
+        page.innerHTML=`<div class="ccm-final-page-content">${pageHeading('Reports','ANALYTICS','Live certification and compliance reporting.','<button type="button" class="ccm-final-action secondary" id="ccmReportRefresh">Refresh ↻</button>')}<div class="ccm-final-kpis">${kpi('Total Certifications',r.total||0)}${kpi('Categories',Object.keys(cats).length)}${kpi('Issuers',Object.keys(issuers).length)}${kpi('Departments',Object.keys(deps).length)}</div><div class="ccm-final-grid">${card('By Category',list(cats))}${card('By Department',list(deps))}</div>${card('By Issuing Body',list(issuers))}</div>`;
+        document.getElementById('ccmReportRefresh')?.addEventListener('click',()=>renderPageDirect_('reports'));
+    }
+
+    function renderSettings(data) {
+        const page=document.getElementById('settingsPage'); if(!page)return;
+        const obj=data&&typeof data==='object'?data:{}; const rows=Object.entries(obj).map(([k,v])=>({Setting:k,Value:typeof v==='object'?JSON.stringify(v):v}));
+        renderCollectionPage_('settings','Settings','SYSTEM CONTROL','System configuration and controlled settings.',rows,{columns:['Setting','Value'],tableTitle:'Configuration'});
+    }
+
+    async function renderPageDirect_(pageName) {
+        const page=document.getElementById(pageName+'Page'); if(!page)return false;
+        ccmForcePageVisible_(pageName);
+        page.innerHTML=`<div class="ccm-final-page-content">${pageHeading(pageName.charAt(0).toUpperCase()+pageName.slice(1),'CCM','Loading live data…')}<div class="ccm-final-card"><div class="ccm-final-empty">Loading…</div></div></div>`;
+        try {
+            console.log('CCM: direct live render start:',pageName);
+            const result=await ccmSafeExecute_(pageName,{});
+            const data=result?.data ?? result;
+            if(pageName==='documents') renderDocuments(arrayFrom(data));
+            else if(pageName==='reports') renderReports(data);
+            else if(pageName==='settings') renderSettings(data);
+            else {
+                const rows=arrayFrom(data);
+                const config={
+                    certifications:{title:'Certifications',eyebrow:'CERTIFICATION REGISTER',description:'Live certification records, validity and ownership.',columns:['Certificate_ID','Employee_ID','Certification_Name','Status','Issue_Date','Expiry_Date'],action:'<button type="button" class="ccm-final-action" id="ccmCreateCert">+ Create Certification</button>'},
+                    employees:{title:'Employees',eyebrow:'EMPLOYEE MASTER',description:'Live employee master data and certification ownership.',columns:['Employee_ID','Employee_Name','Department','Designation','Email','Status']},
+                    renewals:{title:'Renewals',eyebrow:'RENEWAL CONTROL',description:'Live renewal pipeline and expiry monitoring.',columns:['Certificate_ID','Employee_ID','Certification_Name','Expiry_Date','Days_Remaining','Status']},
+                    audit:{title:'Audit Trail',eyebrow:'AUDIT CONTROL',description:'Controlled record of CCM security and operational actions.',columns:['Timestamp','Action','User_Email','Entity_Type','Entity_ID','Result']}
+                }[pageName] || {title:pageName,eyebrow:'CCM',description:'Live system data.',columns:Object.keys(rows[0]||{})};
+                renderCollectionPage_(pageName,config.title,config.eyebrow,config.description,rows,config);
+                if(pageName==='certifications') document.getElementById('ccmCreateCert')?.addEventListener('click',()=>typeof openAddCertificateModal_==='function'&&openAddCertificateModal_());
+            }
+            ccmForcePageVisible_(pageName);
+            console.log('CCM: direct live render complete:',pageName,Array.isArray(data)?data.length:'object');
+            return true;
+        } catch(error) {
+            console.error('CCM: direct live render failed:',pageName,error);
+            page.innerHTML=`<div class="ccm-final-page-content">${pageHeading(pageName.charAt(0).toUpperCase()+pageName.slice(1),'CCM','Live data could not be displayed.')}${card('Load Error',`<div class="ccm-final-empty">${esc(error?.message||error||'Unknown error')}<br><br><button type="button" class="ccm-final-action" id="ccmRetryPage">Retry</button></div>`)}</div>`;
+            document.getElementById('ccmRetryPage')?.addEventListener('click',()=>renderPageDirect_(pageName));
+            ccmForcePageVisible_(pageName);
+            return false;
+        }
+    }
+
+    window.ccmRenderPageDirect_ = renderPageDirect_;
+
+    const originalDashboard = typeof loadDashboard==='function' ? loadDashboard : null;
+    window.navigateToPage_ = function(page, clickedItem=null) {
+        page=String(page||'').trim(); if(!page)return false;
+        const target=document.getElementById(page+'Page'); if(!target){console.error('CCM: page container missing',page);return false;}
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',String(n.dataset.page||'').trim()===page));
+        document.querySelectorAll('.page').forEach(s=>{s.classList.remove('active-page');s.hidden=true;s.style.display='none';});
+        target.hidden=false;target.style.display='block';target.style.visibility='visible';target.style.opacity='1';target.classList.add('active-page');
+        const title=clickedItem?.querySelector('span:last-child')||document.querySelector(`.nav-item[data-page="${page}"] span:last-child`); if(title&&document.getElementById('pageTitle'))document.getElementById('pageTitle').textContent=title.textContent.trim();
+        console.log('CCM NAV CLICK:',page);
+        if(page==='dashboard' && originalDashboard){Promise.resolve(originalDashboard()).catch(e=>console.error('CCM dashboard failed',e));}
+        else renderPageDirect_(page);
+        return true;
+    };
+
+    window.initNavigation = function() {
+        const sidebar=document.getElementById('sidebar'); if(!sidebar)return;
+        sidebar.dataset.ccmNavigationBound='final';
+        if(sidebar._ccmFinalHandler)sidebar.removeEventListener('click',sidebar._ccmFinalHandler);
+        sidebar._ccmFinalHandler=function(event){const item=event.target.closest('.nav-item');if(!item||!sidebar.contains(item))return;event.preventDefault();event.stopPropagation();navigateToPage_(item.dataset.page,item);};
+        sidebar.addEventListener('click',sidebar._ccmFinalHandler);
+        console.log('CCM NAV FINAL READY:',sidebar.querySelectorAll('.nav-item').length);
+    };
+
+    if(document.readyState!=='loading') setTimeout(()=>{try{initNavigation();}catch(e){console.error(e)}},0);
+})();
