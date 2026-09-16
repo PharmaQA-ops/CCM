@@ -4581,3 +4581,159 @@ function openCCMApplication() {
     );
 }
 
+
+
+/* =========================================================
+   CCM 12.0 — FINAL VISUAL PAGE RENDER PATCH
+   API is already returning successfully. This patch ensures
+   the selected page is visibly rendered after its live loader.
+   No backend changes. No UI redesign.
+========================================================= */
+
+function ccmForcePageVisible_(page) {
+    const target = document.getElementById(String(page || '') + 'Page');
+    if (!target) return;
+
+    document.querySelectorAll('.page').forEach(section => {
+        if (section === target) {
+            section.classList.add('active-page');
+            section.hidden = false;
+            section.style.display = 'block';
+            section.style.visibility = 'visible';
+            section.style.opacity = '1';
+        } else {
+            section.classList.remove('active-page');
+            section.hidden = true;
+            section.style.display = 'none';
+        }
+    });
+
+    const main = target.closest('main') || target.parentElement;
+    if (main) {
+        main.style.visibility = 'visible';
+        main.style.opacity = '1';
+    }
+}
+
+async function ccmLoadAndShowPage_(page, loader) {
+    ccmForcePageVisible_(page);
+
+    try {
+        console.log('CCM: loader start:', page);
+        const result = await loader();
+        console.log(
+            'CCM: loader complete:',
+            page,
+            result
+        );
+
+        requestAnimationFrame(() => {
+            ccmForcePageVisible_(page);
+            console.log(
+                'CCM: visual render confirmed:',
+                page,
+                document.getElementById(page + 'Page')?.innerHTML?.length || 0
+            );
+        });
+
+        return result;
+    } catch (error) {
+        console.error('CCM: loader failed:', page, error);
+        ccmForcePageVisible_(page);
+        throw error;
+    }
+}
+
+function navigateToPage_(page, clickedItem = null) {
+    page = String(page || '').trim();
+    if (!page) return false;
+
+    const target = document.getElementById(page + 'Page');
+    if (!target) {
+        console.error('CCM: page container not found:', page + 'Page');
+        return false;
+    }
+
+    document.querySelectorAll('.nav-item').forEach(nav => {
+        nav.classList.toggle(
+            'active',
+            String(nav.dataset.page || '').trim() === page
+        );
+    });
+
+    document.querySelectorAll('.page').forEach(section => {
+        section.classList.remove('active-page');
+        section.hidden = true;
+        section.style.display = 'none';
+    });
+
+    target.classList.add('active-page');
+    target.hidden = false;
+    target.style.display = 'block';
+    target.style.visibility = 'visible';
+    target.style.opacity = '1';
+
+    const pageTitle = document.getElementById('pageTitle');
+    const titleSource = clickedItem ||
+        document.querySelector(`.nav-item[data-page="${page}"]`);
+    const title = titleSource?.querySelector('span:last-child');
+    if (pageTitle && title) {
+        pageTitle.textContent = title.textContent.trim();
+    }
+
+    document.getElementById('sidebar')?.classList.remove('open');
+    console.log('CCM NAV CLICK:', page);
+    console.log('CCM: loading page:', page);
+
+    const loaders = {
+        dashboard: loadDashboard,
+        certifications: loadCertificationsManagementPage_,
+        employees: loadEmployeesPage_,
+        renewals: loadRenewalsPage_,
+        documents: loadDocumentsPage_,
+        reports: loadReportsPage_,
+        audit: loadAuditPage_,
+        settings: loadSettingsPage_
+    };
+
+    const loader = loaders[page];
+    if (typeof loader !== 'function') {
+        console.error('CCM: page loader missing:', page);
+        return false;
+    }
+
+    ccmLoadAndShowPage_(page, loader).catch(error => {
+        console.error('CCM: page render failed:', page, error);
+    });
+
+    return true;
+}
+
+function initNavigation() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) {
+        console.error('CCM: sidebar not found.');
+        return;
+    }
+
+    if (sidebar.dataset.ccmNavigationBound === 'true') return;
+    sidebar.dataset.ccmNavigationBound = 'true';
+
+    sidebar.addEventListener('click', function(event) {
+        const item = event.target.closest('.nav-item');
+        if (!item || !sidebar.contains(item)) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const page = String(item.dataset.page || '').trim();
+        if (!page) return;
+
+        navigateToPage_(page, item);
+    });
+
+    console.log(
+        'CCM NAV READY:',
+        document.querySelectorAll('.nav-item').length
+    );
+}
