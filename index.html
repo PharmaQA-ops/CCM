@@ -150,17 +150,302 @@
         </header>
 
         <!-- pages.html is loaded here by app.js -->
-        <section class="workspace" id="pagesHost" data-pages-source="./pages.html">
-            <div class="page active-page" id="dashboardPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">CENTRAL CERTIFICATION MANAGER</span>
-                        <h1>Certification Dashboard</h1>
-                        <p>Loading live certification and compliance data...</p>
-                    </div>
+        <section class="workspace" id="pagesHost">
+
+<!-- DASHBOARD -->
+<section class="page active-page" id="dashboardPage">
+
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">CENTRAL CERTIFICATION MANAGER</span>
+            <h1>Certification Dashboard</h1>
+            <p>Centralized visibility of employee certifications, expiry risk, renewals and compliance.</p>
+        </div>
+        <button type="button" class="primary-button" id="addCertificateButton">+ Add Certification</button>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon">▣</div>
+            <div><span>Total Certifications</span><strong id="totalCertifications">—</strong></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">✓</div>
+            <div><span>Active</span><strong id="activeCertifications">—</strong></div>
+        </div>
+        <div class="kpi-card warning">
+            <div class="kpi-icon">!</div>
+            <div><span>Renewal Due</span><strong id="renewalCertifications">—</strong></div>
+        </div>
+        <div class="kpi-card danger">
+            <div class="kpi-icon">×</div>
+            <div><span>Expired</span><strong id="expiredCertifications">—</strong></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon">★</div>
+            <div><span>Mandatory</span><strong id="mandatoryCertifications">—</strong></div>
+        </div>
+        <div class="kpi-card compliance">
+            <div class="kpi-icon">%</div>
+            <div><span>Compliance</span><strong id="complianceRate">—</strong></div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Expiry Risk</h2>
+                    <span>Certification expiry exposure</span>
+                </div>
+                <button type="button" class="text-button">View Details →</button>
+            </div>
+
+            <div class="risk-list">
+                <div class="risk-row"><span>0–7 Days</span><div class="risk-bar"><div id="risk07"></div></div><strong id="risk07Value">0</strong></div>
+                <div class="risk-row"><span>8–15 Days</span><div class="risk-bar"><div id="risk815"></div></div><strong id="risk815Value">0</strong></div>
+                <div class="risk-row"><span>16–30 Days</span><div class="risk-bar"><div id="risk1630"></div></div><strong id="risk1630Value">0</strong></div>
+                <div class="risk-row"><span>31–60 Days</span><div class="risk-bar"><div id="risk3160"></div></div><strong id="risk3160Value">0</strong></div>
+                <div class="risk-row"><span>61–90 Days</span><div class="risk-bar"><div id="risk6190"></div></div><strong id="risk6190Value">0</strong></div>
+                <div class="risk-row"><span>90+ Days</span><div class="risk-bar"><div id="risk90"></div></div><strong id="risk90Value">0</strong></div>
+                <div class="risk-row expired-row"><span>Expired</span><div class="risk-bar"><div id="riskExpired"></div></div><strong id="riskExpiredValue">0</strong></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Quick Actions</h2>
+                    <span>Common CCM operations</span>
                 </div>
             </div>
-        </section>
+
+            <div class="quick-actions">
+                <button type="button" class="quick-action">
+                    <span>＋</span>
+                    <div><strong>Add Certification</strong><small>Create a new certification record</small></div>
+                </button>
+                <button type="button" class="quick-action">
+                    <span>↻</span>
+                    <div><strong>Manage Renewals</strong><small>Review upcoming renewals</small></div>
+                </button>
+                <button type="button" class="quick-action">
+                    <span>▤</span>
+                    <div><strong>Documents</strong><small>Access certificate documents</small></div>
+                </button>
+                <button type="button" class="quick-action">
+                    <span>◫</span>
+                    <div><strong>Generate Report</strong><small>View compliance reports</small></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Certification Overview</h2>
+                <span>Latest certification records</span>
+            </div>
+            <button type="button" class="text-button">View All →</button>
+        </div>
+
+        <div class="empty-state">
+            <div class="empty-icon">▣</div>
+            <h3>Loading certification data</h3>
+            <p>The live CCM dashboard will populate this area after authentication.</p>
+        </div>
+    </div>
+</section>
+
+<!-- CERTIFICATIONS -->
+<section class="page" id="certificationsPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">MASTER DATA</span>
+            <h1>Certifications</h1>
+            <p>Certification register, status, expiry and employee assignment.</p>
+        </div>
+        <button type="button" class="primary-button">+ Add Certification</button>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-icon">▣</div><div><span>Total Records</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">✓</div><div><span>Active</span><strong>—</strong></div></div>
+        <div class="kpi-card warning"><div class="kpi-icon">!</div><div><span>Renewal Due</span><strong>—</strong></div></div>
+        <div class="kpi-card danger"><div class="kpi-icon">×</div><div><span>Expired</span><strong>—</strong></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><div><h2>Certification Register</h2><span>Live production records</span></div></div>
+        <div class="table-empty">Loading certification records…</div>
+    </div>
+</section>
+
+<!-- EMPLOYEES -->
+<section class="page" id="employeesPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">MASTER DATA</span>
+            <h1>Employees</h1>
+            <p>Employee certification profiles, assignments and compliance status.</p>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-icon">♙</div><div><span>Total Employees</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">✓</div><div><span>Compliant</span><strong>—</strong></div></div>
+        <div class="kpi-card warning"><div class="kpi-icon">!</div><div><span>Action Required</span><strong>—</strong></div></div>
+        <div class="kpi-card danger"><div class="kpi-icon">×</div><div><span>Expired</span><strong>—</strong></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><div><h2>Employee Master</h2><span>Live employee certification profiles</span></div></div>
+        <div class="table-empty">Loading employee records…</div>
+    </div>
+</section>
+
+<!-- RENEWALS -->
+<section class="page" id="renewalsPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">COMPLIANCE CONTROL</span>
+            <h1>Renewals</h1>
+            <p>Monitor certification expiry, renewal thresholds and escalation actions.</p>
+        </div>
+        <button type="button" class="primary-button">Run Renewal Check</button>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card danger"><div class="kpi-icon">×</div><div><span>Expired</span><strong>—</strong></div></div>
+        <div class="kpi-card warning"><div class="kpi-icon">!</div><div><span>0–7 Days</span><strong>—</strong></div></div>
+        <div class="kpi-card warning"><div class="kpi-icon">↻</div><div><span>8–30 Days</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">◷</div><div><span>31–90 Days</span><strong>—</strong></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><div><h2>Renewal Register</h2><span>Live expiry and notification status</span></div></div>
+        <div class="table-empty">Loading renewal records…</div>
+    </div>
+</section>
+
+<!-- DOCUMENTS -->
+<section class="page" id="documentsPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">DOCUMENT CONTROL</span>
+            <h1>Documents</h1>
+            <p>Controlled access to certification documents.</p>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-icon">▤</div><div><span>Total Documents</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">○</div><div><span>Public</span><strong>—</strong></div></div>
+        <div class="kpi-card warning"><div class="kpi-icon">◐</div><div><span>Controlled</span><strong>—</strong></div></div>
+        <div class="kpi-card danger"><div class="kpi-icon">◉</div><div><span>Restricted</span><strong>—</strong></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><div><h2>Document Control Register</h2><span>Classification and access-controlled documents</span></div></div>
+        <div class="table-empty">Loading document records…</div>
+    </div>
+</section>
+
+<!-- REPORTS -->
+<section class="page" id="reportsPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">ANALYTICS</span>
+            <h1>Reports</h1>
+            <p>Certification and compliance reporting.</p>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-icon">▣</div><div><span>Certifications</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">◫</div><div><span>Categories</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">⌂</div><div><span>Issuers</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">▤</div><div><span>Departments</span><strong>—</strong></div></div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="panel-header"><div><h2>Certification Distribution</h2><span>By category</span></div></div>
+            <div class="chart-placeholder">Live report chart loading…</div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><div><h2>Department Distribution</h2><span>Compliance population</span></div></div>
+            <div class="chart-placeholder">Live report chart loading…</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><div><h2>Report Centre</h2><span>CCM management reporting</span></div></div>
+        <div class="table-empty">Loading reporting data…</div>
+    </div>
+</section>
+
+<!-- AUDIT -->
+<section class="page" id="auditPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">GOVERNANCE</span>
+            <h1>Audit Trail</h1>
+            <p>System activity, authentication, document access and controlled actions.</p>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-icon">◉</div><div><span>Total Events</span><strong>—</strong></div></div>
+        <div class="kpi-card"><div class="kpi-icon">✓</div><div><span>Successful</span><strong>—</strong></div></div>
+        <div class="kpi-card warning"><div class="kpi-icon">!</div><div><span>Warnings</span><strong>—</strong></div></div>
+        <div class="kpi-card danger"><div class="kpi-icon">×</div><div><span>Errors</span><strong>—</strong></div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><div><h2>Audit Register</h2><span>Immutable operational activity view</span></div></div>
+        <div class="table-empty">Loading audit events…</div>
+    </div>
+</section>
+
+<!-- SETTINGS -->
+<section class="page" id="settingsPage">
+    <div class="page-heading">
+        <div>
+            <span class="eyebrow">SYSTEM</span>
+            <h1>Settings</h1>
+            <p>CCM configuration, roles, permissions and system administration.</p>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <div class="panel-header"><div><h2>System Configuration</h2><span>Production CCM settings</span></div></div>
+            <div class="settings-list">
+                <div class="settings-row"><strong>Application</strong><span>Central Certification Manager</span></div>
+                <div class="settings-row"><strong>Environment</strong><span>Production</span></div>
+                <div class="settings-row"><strong>Authentication</strong><span>Google Workspace OAuth</span></div>
+                <div class="settings-row"><strong>Authorization</strong><span>Backend RBAC</span></div>
+                <div class="settings-row"><strong>Data Store</strong><span>Google Sheets</span></div>
+                <div class="settings-row"><strong>Documents</strong><span>Google Drive</span></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><div><h2>Access Control</h2><span>Role and permission administration</span></div></div>
+            <div class="settings-list">
+                <div class="settings-row"><strong>Users</strong><span>RBAC controlled</span></div>
+                <div class="settings-row"><strong>Roles</strong><span>RBAC controlled</span></div>
+                <div class="settings-row"><strong>Permissions</strong><span>Backend enforced</span></div>
+                <div class="settings-row"><strong>Audit</strong><span>Enabled</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+</section>
 
         <footer class="footer">
             <span>Gaerish Logistics Pvt Ltd</span>
@@ -171,6 +456,6 @@
     </main>
 </div>
 
-<script src="./app.js"></script>
+<script src="./app.js?v=12.0.0"></script>
 </body>
 </html>
