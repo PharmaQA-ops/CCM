@@ -2652,19 +2652,59 @@ function navigateToPage_(
         return false;
     }
 
-    const target =
+    /*
+     * The original HTML contains the Dashboard page container,
+     * while the other CCM pages are created dynamically.
+     *
+     * NEVER replace an existing page container before its loader
+     * runs. Dashboard and the legacy overview depend on their
+     * existing DOM IDs.
+     */
+    let target =
         document.getElementById(
             page + "Page"
         );
 
     if (!target) {
-        console.error(
-            "CCM navigation target not found:",
-            page + "Page"
+        const dashboardPage =
+            document.getElementById(
+                "dashboardPage"
+            );
+
+        const pageHost =
+            dashboardPage?.parentElement ||
+            document.querySelector(
+                ".pages-container, .content, .main-content, main"
+            );
+
+        if (!pageHost) {
+            console.error(
+                "CCM page host not found."
+            );
+            ccmNotify_(
+                "CCM page container is unavailable.",
+                "error"
+            );
+            return false;
+        }
+
+        target =
+            document.createElement("section");
+
+        target.id =
+            page + "Page";
+
+        target.className =
+            "page";
+
+        pageHost.appendChild(
+            target
         );
-        return false;
     }
 
+    /*
+     * Navigation state.
+     */
     document
         .querySelectorAll(".nav-item")
         .forEach(nav => {
@@ -2677,13 +2717,19 @@ function navigateToPage_(
     document
         .querySelectorAll(".page")
         .forEach(section => {
-            section.classList.remove("active-page");
+            section.classList.remove(
+                "active-page"
+            );
         });
 
-    target.classList.add("active-page");
+    target.classList.add(
+        "active-page"
+    );
 
     const pageTitle =
-        document.getElementById("pageTitle");
+        document.getElementById(
+            "pageTitle"
+        );
 
     const titleSource =
         clickedItem ||
@@ -2706,36 +2752,44 @@ function navigateToPage_(
         ?.classList.remove("open");
 
     /*
-     * UNIVERSAL SKELETON
-     * Always render visible content immediately.
+     * For dynamically-created pages, show the skeleton immediately.
+     * Existing pages are left intact until their own loader renders,
+     * preventing Dashboard from losing its required DOM.
      */
-    try {
-        const label =
-            title?.textContent?.trim() ||
-            page.charAt(0).toUpperCase() +
-            page.slice(1);
+    if (
+        target.childElementCount === 0
+    ) {
+        try {
+            const label =
+                title?.textContent?.trim() ||
+                page.charAt(0).toUpperCase() +
+                page.slice(1);
 
-        target.innerHTML =
-            ccmPageShell_(
-                label,
-                "CCM",
-                "Loading live production data…"
-            ) +
-            ccmPanel_(
-                ccmLoading_(
-                    "Loading " + label + "…"
-                )
+            target.innerHTML =
+                ccmPageShell_(
+                    label,
+                    "CCM",
+                    "Loading live production data…"
+                ) +
+                ccmPanel_(
+                    ccmLoading_(
+                        "Loading " +
+                        label +
+                        "…"
+                    )
+                );
+        } catch (error) {
+            console.error(
+                "CCM skeleton render failed:",
+                error
             );
-    } catch (error) {
-        console.error(
-            "CCM universal skeleton failed:",
-            error
-        );
+        }
     }
 
     /*
-     * Every navigation item gets its own live loader.
-     * Backend RBAC remains authoritative.
+     * Page-specific live loader.
+     * RBAC is checked before navigation and the backend remains
+     * authoritative for every API operation.
      */
     let loader = null;
 
@@ -2746,7 +2800,8 @@ function navigateToPage_(
                     "PERM-DASHBOARD-VIEW"
                 )
             ) {
-                loader = loadDashboard;
+                loader =
+                    loadDashboard;
             }
             break;
 
@@ -2786,10 +2841,15 @@ function navigateToPage_(
             break;
     }
 
-    if (typeof loader === "function") {
+    if (
+        typeof loader ===
+        "function"
+    ) {
         Promise
             .resolve()
-            .then(() => loader())
+            .then(() =>
+                loader()
+            )
             .catch(error => {
                 console.error(
                     "CCM page loader failed [" +
@@ -2798,6 +2858,11 @@ function navigateToPage_(
                     error
                 );
 
+                /*
+                 * Do not leave the user on a blank screen.
+                 * The existing page is replaced only on an actual
+                 * loader failure.
+                 */
                 try {
                     target.innerHTML =
                         ccmPageShell_(
@@ -2812,7 +2877,9 @@ function navigateToPage_(
                                 "The page could not be loaded."
                             )
                         );
-                } catch (renderError) {
+                } catch (
+                    renderError
+                ) {
                     console.error(
                         "CCM page error renderer failed:",
                         renderError
