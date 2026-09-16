@@ -3650,6 +3650,145 @@ async function openAddCertificateModal_() {
             submitCertificateCreate_
         );
 }
+async function submitCertificateCreate_(event) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const button = document.getElementById("saveCertificateButton");
+    const status = document.getElementById("certificateFormStatus");
+
+    if (!form) {
+        return;
+    }
+
+    const data = Object.fromEntries(
+        new FormData(form).entries()
+    );
+
+    /*
+     * Basic client-side validation
+     */
+    if (!data.Employee_ID) {
+        if (status) {
+            status.textContent = "Please select an employee.";
+        }
+        return;
+    }
+
+    if (!data.Certification_Name) {
+        if (status) {
+            status.textContent = "Certification Name is required.";
+        }
+        return;
+    }
+
+    if (!data.Issue_Date) {
+        if (status) {
+            status.textContent = "Issue Date is required.";
+        }
+        return;
+    }
+
+    if (!data.Expiry_Date) {
+        if (status) {
+            status.textContent = "Expiry Date is required.";
+        }
+        return;
+    }
+
+    /*
+     * Prevent duplicate submission
+     */
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Creating…";
+    }
+
+    if (status) {
+        status.textContent = "Creating certification record…";
+    }
+
+    try {
+        const result = await ccmSafeExecute_(
+            "createCertificate",
+            {
+                data: data
+            }
+        );
+
+        console.log(
+            "CCM certification creation result:",
+            result
+        );
+
+        if (!result || result.success !== true) {
+            throw new Error(
+                result?.error ||
+                "Certification could not be created."
+            );
+        }
+
+        /*
+         * Close form only after backend confirms success.
+         */
+        ccmCloseModal_(
+            "certificateFormModal"
+        );
+
+        ccmNotify_(
+            `Certification ${result.certificateId || ""} created successfully.`,
+            "success"
+        );
+
+        /*
+         * Refresh live certification data.
+         */
+        await loadCertificates();
+
+        /*
+         * Refresh dashboard KPIs.
+         */
+        if (
+            ccmHasPermission_(
+                "PERM-DASHBOARD-VIEW"
+            )
+        ) {
+            await loadDashboard();
+        }
+
+        /*
+         * Refresh certification management page
+         * if currently visible.
+         */
+        if (
+            document
+                .getElementById("certificationsPage")
+                ?.classList
+                .contains("active-page")
+        ) {
+            await loadCertificationsManagementPage_();
+        }
+
+    } catch (error) {
+
+        console.error(
+            "CCM certification creation failed:",
+            error
+        );
+
+        if (status) {
+            status.textContent =
+                error?.message ||
+                "Certification creation failed.";
+        }
+
+        if (button) {
+            button.disabled = false;
+            button.textContent =
+                "Create Certification";
+        }
+    }
+}
 async function openEditCertificateModal_(certificateId) {
     if (!ccmHasPermission_("PERM-CERT-EDIT")) {
         ccmNotify_("You do not have permission to edit certifications.", "error");
