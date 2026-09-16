@@ -2734,53 +2734,51 @@ function navigateToPage_(page, clickedItem = null) {
 
     return true;
 }
-    /*
-       Page-specific live loading.
-       Backend RBAC remains authoritative.
-    */
+/*
+   Page-specific live loading.
+   Backend RBAC remains authoritative.
+*/
 
-    switch (page) {
+switch (page) {
 
-        case "dashboard":
+    case "dashboard":
 
-            if (
-                ccmHasPermission_(
-                    "PERM-DASHBOARD-VIEW"
-                )
-            ) {
-                loadDashboard();
-            }
+        if (
+            ccmHasPermission_(
+                "PERM-DASHBOARD-VIEW"
+            )
+        ) {
+            loadDashboard();
+        }
 
-            break;
-
-
-        case "certifications":
-
-            if (
-                ccmHasPermission_(
-                    "PERM-CERT-VIEW"
-                ) ||
-                ccmHasPermission_(
-                    "PERM-CERT-OWN-VIEW"
-                )
-            ) {
-                loadCertificates();
-            }
-
-            break;
+        break;
 
 
-        default:
-            break;
+    case "certifications":
 
-    }
+        if (
+            ccmHasPermission_(
+                "PERM-CERT-VIEW"
+            ) ||
+            ccmHasPermission_(
+                "PERM-CERT-OWN-VIEW"
+            )
+        ) {
+            loadCertificates();
+        }
+
+        break;
 
 
-    return true;
+    default:
+        break;
 
 }
 
 
+return true;
+
+}
 function openAuthorizedDefaultPage_() {
 
     const preferredPages = [
