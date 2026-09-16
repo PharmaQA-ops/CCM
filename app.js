@@ -2644,171 +2644,185 @@ function navigateToPage_(
     page,
     clickedItem = null
 ) {
-
-    if (
-        !page ||
-        !isPageAuthorized_(page)
-    ) {
-
-        console.warn(
-            "CCM navigation denied:",
-            page
+    if (!page || !isPageAuthorized_(page)) {
+        ccmNotify_(
+            "You are not authorized to access this section.",
+            "error"
         );
-
         return false;
-
     }
-
 
     const target =
         document.getElementById(
             page + "Page"
         );
 
-
     if (!target) {
-
-        console.warn(
-            "CCM page container not found:",
+        console.error(
+            "CCM navigation target not found:",
             page + "Page"
         );
-
         return false;
-
     }
 
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(nav => {
+            nav.classList.toggle(
+                "active",
+                nav.dataset.page === page
+            );
+        });
 
     document
-        .querySelectorAll(
-            ".nav-item"
-        )
-        .forEach(
-            nav => {
+        .querySelectorAll(".page")
+        .forEach(section => {
+            section.classList.remove("active-page");
+        });
 
-                nav.classList.toggle(
-                    "active",
-                    nav.dataset.page === page
-                );
-
-            }
-        );
-
-
-    document
-        .querySelectorAll(
-            ".page"
-        )
-        .forEach(
-            section => {
-
-                section.classList.remove(
-                    "active-page"
-                );
-
-            }
-        );
-
-
-    target.classList.add(
-        "active-page"
-    );
-
+    target.classList.add("active-page");
 
     const pageTitle =
-        document.getElementById(
-            "pageTitle"
-        );
-
+        document.getElementById("pageTitle");
 
     const titleSource =
         clickedItem ||
         document.querySelector(
-            '.nav-item[data-page="' +
-            page +
-            '"]'
+            `.nav-item[data-page="${page}"]`
         );
-
 
     const title =
-        titleSource
-            ? titleSource.querySelector(
-                "span:last-child"
-            )
-            : null;
+        titleSource?.querySelector(
+            "span:last-child"
+        );
 
-
-    if (
-        title &&
-        pageTitle
-    ) {
-
+    if (pageTitle && title) {
         pageTitle.textContent =
             title.textContent.trim();
-
     }
 
-
-    const sidebar =
-        document.getElementById(
-            "sidebar"
-        );
-
-
-    if (sidebar) {
-
-        sidebar.classList.remove(
-            "open"
-        );
-
-    }
-
+    document
+        .getElementById("sidebar")
+        ?.classList.remove("open");
 
     /*
-       Page-specific live loading.
-       Backend RBAC remains authoritative.
-    */
+     * UNIVERSAL SKELETON
+     * Always render visible content immediately.
+     */
+    try {
+        const label =
+            title?.textContent?.trim() ||
+            page.charAt(0).toUpperCase() +
+            page.slice(1);
+
+        target.innerHTML =
+            ccmPageShell_(
+                label,
+                "CCM",
+                "Loading live production data…"
+            ) +
+            ccmPanel_(
+                ccmLoading_(
+                    "Loading " + label + "…"
+                )
+            );
+    } catch (error) {
+        console.error(
+            "CCM universal skeleton failed:",
+            error
+        );
+    }
+
+    /*
+     * Every navigation item gets its own live loader.
+     * Backend RBAC remains authoritative.
+     */
+    let loader = null;
 
     switch (page) {
-
         case "dashboard":
-
             if (
                 ccmHasPermission_(
                     "PERM-DASHBOARD-VIEW"
                 )
             ) {
-                loadDashboard();
+                loader = loadDashboard;
             }
-
             break;
-
 
         case "certifications":
-
-            if (
-                ccmHasPermission_(
-                    "PERM-CERT-VIEW"
-                ) ||
-                ccmHasPermission_(
-                    "PERM-CERT-OWN-VIEW"
-                )
-            ) {
-                loadCertificates();
-            }
-
+            loader =
+                loadCertificationsManagementPage_;
             break;
 
-
-        default:
+        case "employees":
+            loader =
+                loadEmployeesPage_;
             break;
 
+        case "renewals":
+            loader =
+                loadRenewalsPage_;
+            break;
+
+        case "documents":
+            loader =
+                loadDocumentsPage_;
+            break;
+
+        case "reports":
+            loader =
+                loadReportsPage_;
+            break;
+
+        case "audit":
+            loader =
+                loadAuditPage_;
+            break;
+
+        case "settings":
+            loader =
+                loadSettingsPage_;
+            break;
     }
 
+    if (typeof loader === "function") {
+        Promise
+            .resolve()
+            .then(() => loader())
+            .catch(error => {
+                console.error(
+                    "CCM page loader failed [" +
+                    page +
+                    "]:",
+                    error
+                );
+
+                try {
+                    target.innerHTML =
+                        ccmPageShell_(
+                            title?.textContent?.trim() ||
+                            page,
+                            "CCM",
+                            "Unable to load live data."
+                        ) +
+                        ccmPanel_(
+                            ccmError_(
+                                error?.message ||
+                                "The page could not be loaded."
+                            )
+                        );
+                } catch (renderError) {
+                    console.error(
+                        "CCM page error renderer failed:",
+                        renderError
+                    );
+                }
+            });
+    }
 
     return true;
-
 }
-
 
 function openAuthorizedDefaultPage_() {
 
