@@ -4849,11 +4849,214 @@ function initNavigation() {
     }
 
     function renderReports(data) {
-        const page=document.getElementById('reportsPage'); if(!page)return;
-        const r=data||{}; const cats=r.byCategory||{}, deps=r.byDepartment||{}, issuers=r.byIssuer||{};
-        const list=(obj)=>{const entries=Object.entries(obj); if(!entries.length)return '<div class="ccm-final-empty">No data.</div>';const max=Math.max(...entries.map(x=>Number(x[1])||0),1);return `<div class="ccm-final-list">${entries.map(([k,v])=>`<div><div class="ccm-final-list-row"><span>${esc(k)}</span><strong>${esc(v)}</strong></div><div class="ccm-final-bar"><i style="width:${Math.round((Number(v)||0)/max*100)}%"></i></div></div>`).join('')}</div>`;};
-        page.innerHTML=`<div class="ccm-final-page-content">${pageHeading('Reports','ANALYTICS','Live certification and compliance reporting.','<button type="button" class="ccm-final-action secondary" id="ccmReportRefresh">Refresh ↻</button>')}<div class="ccm-final-kpis">${kpi('Total Certifications',r.total||0)}${kpi('Categories',Object.keys(cats).length)}${kpi('Issuers',Object.keys(issuers).length)}${kpi('Departments',Object.keys(deps).length)}</div><div class="ccm-final-grid">${card('By Category',list(cats))}${card('By Department',list(deps))}</div>${card('By Issuing Body',list(issuers))}</div>`;
-        document.getElementById('ccmReportRefresh')?.addEventListener('click',()=>renderPageDirect_('reports'));
+        const page = document.getElementById('reportsPage');
+        if (!page) return;
+
+        const r = data || {};
+        const cats = r.byCategory || {};
+        const deps = r.byDepartment || {};
+        const issuers = r.byIssuer || {};
+        const reportTypes = Array.isArray(r.reportTypes) && r.reportTypes.length
+            ? r.reportTypes
+            : [
+                {id:'CERTIFICATION_MASTER',name:'Certification Master Register'},
+                {id:'CERTIFICATION_STATUS',name:'Certification Status Report'},
+                {id:'EXPIRY_RENEWAL',name:'Expiry & Renewal Report'},
+                {id:'EMPLOYEE_COMPLIANCE',name:'Employee Compliance Report'},
+                {id:'DEPARTMENT_COMPLIANCE',name:'Department Compliance Report'},
+                {id:'MANDATORY_CERTIFICATION',name:'Mandatory Certification Report'},
+                {id:'CERTIFICATION_TYPE',name:'Certification Type Report'},
+                {id:'ISSUING_BODY',name:'Issuing Body Report'},
+                {id:'DOCUMENT_CONTROL',name:'Document Control Report'},
+                {id:'NOTIFICATION_HISTORY',name:'Notification History Report'},
+                {id:'AUDIT_TRAIL',name:'Audit Trail Report'},
+                {id:'CERTIFICATION_GAP',name:'Certification Gap Report'},
+                {id:'MANAGEMENT_SUMMARY',name:'Management Summary'}
+            ];
+
+        const list = (obj) => {
+            const entries = Object.entries(obj || {});
+            if (!entries.length) return '<div class="ccm-final-empty">No data.</div>';
+            const max = Math.max(...entries.map(x => Number(x[1]) || 0), 1);
+            return `<div class="ccm-final-list">${entries.map(([k,v]) => `
+                <div>
+                    <div class="ccm-final-list-row">
+                        <span>${esc(k)}</span>
+                        <strong>${esc(v)}</strong>
+                    </div>
+                    <div class="ccm-final-bar">
+                        <i style="width:${Math.round((Number(v)||0)/max*100)}%"></i>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        };
+
+        const reportOptions = reportTypes.map((item, index) => `
+            <option value="${esc(item.id)}" ${index === 0 ? 'selected' : ''}>
+                ${esc(item.name)}
+            </option>
+        `).join('');
+
+        page.innerHTML = `
+            <div class="ccm-final-page-content">
+                ${pageHeading(
+                    'Reports',
+                    'ANALYTICS',
+                    'Live certification and compliance reporting.',
+                    '<button type="button" class="ccm-final-action secondary" id="ccmReportRefresh">Refresh ↻</button>'
+                )}
+
+                <div class="ccm-final-kpis">
+                    ${kpi('Total Certifications', r.total || 0)}
+                    ${kpi('Categories', Object.keys(cats).length)}
+                    ${kpi('Issuers', Object.keys(issuers).length)}
+                    ${kpi('Departments', Object.keys(deps).length)}
+                </div>
+
+                <div class="ccm-final-card ccm-report-centre">
+                    <div class="ccm-final-card-head">
+                        <div>
+                            <h2>Report Centre</h2>
+                            <span>Generate controlled CCM reports from live master data.</span>
+                        </div>
+                    </div>
+
+                    <div class="ccm-report-download-row">
+                        <select id="ccmReportType" class="ccm-final-control">
+                            ${reportOptions}
+                        </select>
+
+                        <button type="button" class="ccm-final-action" id="ccmGenerateExcel">
+                            Download Excel
+                        </button>
+
+                        <button type="button" class="ccm-final-action secondary" id="ccmGeneratePdf">
+                            Download PDF
+                        </button>
+
+                        <button type="button" class="ccm-final-action secondary" id="ccmOpenSheet">
+                            Open Google Sheet
+                        </button>
+                    </div>
+
+                    <div id="ccmReportStatus" class="ccm-report-status">
+                        Select a report and generate the required output.
+                    </div>
+                </div>
+
+                <div class="ccm-final-grid">
+                    ${card('By Category', list(cats))}
+                    ${card('By Department', list(deps))}
+                </div>
+
+                ${card('By Issuing Body', list(issuers))}
+            </div>
+        `;
+
+        document.getElementById('ccmReportRefresh')?.addEventListener(
+            'click',
+            () => renderPageDirect_('reports')
+        );
+
+        const typeSelect = document.getElementById('ccmReportType');
+        const status = document.getElementById('ccmReportStatus');
+        const excelButton = document.getElementById('ccmGenerateExcel');
+        const pdfButton = document.getElementById('ccmGeneratePdf');
+        const sheetButton = document.getElementById('ccmOpenSheet');
+
+        async function generateSelectedReport_(format) {
+            const reportType = typeSelect?.value || '';
+            if (!reportType) return;
+
+            const button =
+                format === 'xlsx'
+                    ? excelButton
+                    : format === 'pdf'
+                        ? pdfButton
+                        : sheetButton;
+
+            const originalText = button?.textContent || '';
+
+            if (button) {
+                button.disabled = true;
+                button.textContent =
+                    format === 'xlsx'
+                        ? 'Generating Excel…'
+                        : format === 'pdf'
+                            ? 'Generating PDF…'
+                            : 'Opening Sheet…';
+            }
+
+            if (status) {
+                status.textContent = 'Generating controlled report…';
+            }
+
+            try {
+                const result = await ccmSafeExecute_(
+                    'generateReport',
+                    {
+                        reportType: reportType,
+                        options: {}
+                    }
+                );
+
+                const target =
+                    format === 'xlsx'
+                        ? result?.xlsx
+                        : format === 'pdf'
+                            ? result?.pdf
+                            : result?.spreadsheet;
+
+                if (!target?.url) {
+                    throw new Error(
+                        'The selected report did not return a download URL.'
+                    );
+                }
+
+                window.open(
+                    target.url,
+                    '_blank',
+                    'noopener,noreferrer'
+                );
+
+                if (status) {
+                    status.textContent =
+                        `${result.title || reportType} generated successfully. ` +
+                        `${result.recordCount ?? 0} records.`;
+                }
+            } catch (error) {
+                console.error(
+                    'CCM report generation failed:',
+                    error
+                );
+
+                if (status) {
+                    status.textContent =
+                        error?.message ||
+                        'Report generation failed.';
+                }
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            }
+        }
+
+        excelButton?.addEventListener(
+            'click',
+            () => generateSelectedReport_('xlsx')
+        );
+
+        pdfButton?.addEventListener(
+            'click',
+            () => generateSelectedReport_('pdf')
+        );
+
+        sheetButton?.addEventListener(
+            'click',
+            () => generateSelectedReport_('sheet')
+        );
     }
 
     function renderSettings(data) {
@@ -4868,7 +5071,8 @@ function initNavigation() {
         page.innerHTML=`<div class="ccm-final-page-content">${pageHeading(pageName.charAt(0).toUpperCase()+pageName.slice(1),'CCM','Loading live data…')}<div class="ccm-final-card"><div class="ccm-final-empty">Loading…</div></div></div>`;
         try {
             console.log('CCM: direct live render start:',pageName);
-            const result=await ccmSafeExecute_(pageName,{});
+            const apiAction = pageName === 'certifications' ? 'certificates' : pageName;
+            const result=await ccmSafeExecute_(apiAction,{});
             const data=result?.data ?? result;
             if(pageName==='documents') renderDocuments(arrayFrom(data));
             else if(pageName==='reports') renderReports(data);

@@ -1958,3 +1958,45 @@ button {
     .ccm-modal-header, .ccm-modal-body, .ccm-modal-footer { padding-left:15px; padding-right:15px; }
     .ccm-donut-wrap { flex-direction:column; align-items:flex-start; }
 }
+
+
+/* CCM 12.0 REPORT CENTRE */
+.ccm-report-centre {
+    margin-top: 18px;
+}
+
+.ccm-report-download-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.ccm-final-control {
+    min-height: 40px;
+    min-width: 310px;
+    padding: 9px 12px;
+    border: 1px solid #d8e0e8;
+    border-radius: 8px;
+    background: #fff;
+    color: #17202a;
+    font: inherit;
+}
+
+.ccm-report-status {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #6b7785;
+}
+
+@media (max-width: 720px) {
+    .ccm-final-control {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .ccm-report-download-row .ccm-final-action {
+        width: 100%;
+    }
+}
