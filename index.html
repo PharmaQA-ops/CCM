@@ -3,81 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Central Certification Manager</title>
-
     <link rel="stylesheet" href="./style.css">
-    <script
-        src="https://accounts.google.com/gsi/client"
-        async
-        defer
-    ></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
-<!-- =====================================================
-     CCM LOGIN SCREEN
-===================================================== -->
 
-<div id="loginScreen" class="login-screen">
-
+<!-- LOGIN -->
+<section id="loginScreen" class="login-screen">
     <div class="login-card">
-
-        <div class="login-logo">
-            <img
-                src="assets/logo.png"
-                alt="Gaerish Logistics"
-            >
-        </div>
-
         <div class="login-brand">
-            <h1>Gaerish Logistics</h1>
-            <span>CENTRAL CERTIFICATION MANAGER</span>
-        </div>
-
-        <div class="login-divider"></div>
-
-        <h2>Welcome to CCM</h2>
-
-        <p class="login-description">
-            Sign in with your authorized Google Workspace
-            account to access the Central Certification Manager.
-        </p>
-
-        <!-- Google Sign-In -->
-        <div
-            id="googleLogin"
-            class="google-login"
-        ></div>
-
-        <div
-            id="loginStatus"
-            class="login-status"
-        ></div>
-
-        <div class="login-security">
-
-            <span class="security-icon">◆</span>
-
+            <img src="assets/logo.png" alt="Gaerish Logistics">
             <div>
-                <strong>Authorized Access Only</strong>
-                <small>
-                    Access is controlled by CCM
-                    user roles and permissions.
-                </small>
+                <h1>Gaerish Logistics</h1>
+                <span>Central Certification Manager</span>
             </div>
-
         </div>
+
+        <div class="login-copy">
+            <span class="eyebrow">SECURE WORKSPACE</span>
+            <h2>Central Certification Manager</h2>
+            <p>Certification, renewal, document and compliance management.</p>
+        </div>
+
+        <div id="googleLogin" class="google-login"></div>
+        <div id="loginStatus" class="login-status" aria-live="polite"></div>
 
         <div class="login-footer">
-            Gaerish Logistics Pvt Ltd<br>
-            Central Certification Manager
+            <span>Production System</span>
+            <span>Gaerish Logistics Pvt Ltd</span>
         </div>
-
     </div>
+</section>
 
-</div>
-<div class="app">
+<!-- APPLICATION -->
+<div class="app" id="ccmApplication">
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
@@ -93,27 +54,27 @@
         <div class="sidebar-section">
             <span class="section-title">MAIN</span>
 
-            <button class="nav-item active" data-page="dashboard">
+            <button type="button" class="nav-item active" data-page="dashboard">
                 <span class="nav-icon">▦</span>
                 <span>Dashboard</span>
             </button>
 
-            <button class="nav-item" data-page="certifications">
+            <button type="button" class="nav-item" data-page="certifications">
                 <span class="nav-icon">▣</span>
                 <span>Certifications</span>
             </button>
 
-            <button class="nav-item" data-page="employees">
+            <button type="button" class="nav-item" data-page="employees">
                 <span class="nav-icon">♙</span>
                 <span>Employees</span>
             </button>
 
-            <button class="nav-item" data-page="renewals">
+            <button type="button" class="nav-item" data-page="renewals">
                 <span class="nav-icon">↻</span>
                 <span>Renewals</span>
             </button>
 
-            <button class="nav-item" data-page="documents">
+            <button type="button" class="nav-item" data-page="documents">
                 <span class="nav-icon">▤</span>
                 <span>Documents</span>
             </button>
@@ -122,17 +83,17 @@
         <div class="sidebar-section">
             <span class="section-title">CONTROL</span>
 
-            <button class="nav-item" data-page="reports">
+            <button type="button" class="nav-item" data-page="reports">
                 <span class="nav-icon">◫</span>
                 <span>Reports</span>
             </button>
 
-            <button class="nav-item" data-page="audit">
+            <button type="button" class="nav-item" data-page="audit">
                 <span class="nav-icon">◉</span>
                 <span>Audit Trail</span>
             </button>
 
-            <button class="nav-item" data-page="settings">
+            <button type="button" class="nav-item" data-page="settings">
                 <span class="nav-icon">⚙</span>
                 <span>Settings</span>
             </button>
@@ -147,564 +108,59 @@
                 </div>
             </div>
 
-            <div class="version">
-                CCM Production
-            </div>
+            <div class="version">CCM Production</div>
         </div>
-
     </aside>
-
 
     <!-- MAIN -->
     <main class="main">
 
-        <!-- TOPBAR -->
         <header class="topbar">
 
             <div class="topbar-left">
-
-                <button class="menu-button" id="menuButton">
-                    ☰
-                </button>
+                <button type="button" class="menu-button" id="menuButton">☰</button>
 
                 <div class="breadcrumb">
                     <span>CCM</span>
                     <b>/</b>
                     <strong id="pageTitle">Dashboard</strong>
                 </div>
-
             </div>
 
             <div class="topbar-right">
 
-                <button class="icon-button" title="Notifications">
+                <button type="button" class="icon-button" title="Notifications">
                     🔔
                     <span class="notification-dot"></span>
                 </button>
 
-                <div class="user-profile">
+                <div class="user-profile" id="userProfile">
 
-                    <div class="avatar">
-                        C
-                    </div>
+                    <div class="avatar" id="userAvatar">C</div>
 
                     <div class="user-info">
                         <strong id="userName">User</strong>
                         <span id="userRole">Loading...</span>
                     </div>
 
-                    <button class="profile-arrow">
-                        ▾
-                    </button>
-
+                    <button type="button" class="profile-arrow">▾</button>
                 </div>
 
             </div>
-
         </header>
 
-
-        <!-- PAGE CONTENT -->
-        <section class="workspace">
-
-            <!-- DASHBOARD -->
+        <!-- pages.html is loaded here by app.js -->
+        <section class="workspace" id="pagesHost" data-pages-source="./pages.html">
             <div class="page active-page" id="dashboardPage">
-
                 <div class="page-heading">
-
                     <div>
                         <span class="eyebrow">CENTRAL CERTIFICATION MANAGER</span>
                         <h1>Certification Dashboard</h1>
-                        <p>
-                            Centralized visibility of employee certifications,
-                            expiry risk, renewals and compliance.
-                        </p>
+                        <p>Loading live certification and compliance data...</p>
                     </div>
-
-                    <button class="primary-button" id="addCertificateButton">
-                        + Add Certification
-                    </button>
-
-                </div>
-
-
-                <!-- KPI CARDS -->
-                <div class="kpi-grid">
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon">▣</div>
-                        <div>
-                            <span>Total Certifications</span>
-                            <strong id="totalCertifications">—</strong>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon">✓</div>
-                        <div>
-                            <span>Active</span>
-                            <strong id="activeCertifications">—</strong>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card warning">
-                        <div class="kpi-icon">!</div>
-                        <div>
-                            <span>Renewal Due</span>
-                            <strong id="renewalCertifications">—</strong>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card danger">
-                        <div class="kpi-icon">×</div>
-                        <div>
-                            <span>Expired</span>
-                            <strong id="expiredCertifications">—</strong>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card">
-                        <div class="kpi-icon">★</div>
-                        <div>
-                            <span>Mandatory</span>
-                            <strong id="mandatoryCertifications">—</strong>
-                        </div>
-                    </div>
-
-                    <div class="kpi-card compliance">
-                        <div class="kpi-icon">%</div>
-                        <div>
-                            <span>Compliance</span>
-                            <strong id="complianceRate">—</strong>
-                        </div>
-                    </div>
-
-                </div>
-
-
-                <!-- DASHBOARD GRID -->
-                <div class="dashboard-grid">
-
-                    <!-- EXPIRY RISK -->
-                    <div class="panel">
-
-                        <div class="panel-header">
-                            <div>
-                                <h2>Expiry Risk</h2>
-                                <span>Certification expiry exposure</span>
-                            </div>
-
-                            <button class="text-button">
-                                View Details →
-                            </button>
-                        </div>
-
-                        <div class="risk-list">
-
-                            <div class="risk-row">
-                                <span>0–7 Days</span>
-                                <div class="risk-bar">
-                                    <div id="risk07"></div>
-                                </div>
-                                <strong id="risk07Value">0</strong>
-                            </div>
-
-                            <div class="risk-row">
-                                <span>8–15 Days</span>
-                                <div class="risk-bar">
-                                    <div id="risk815"></div>
-                                </div>
-                                <strong id="risk815Value">0</strong>
-                            </div>
-
-                            <div class="risk-row">
-                                <span>16–30 Days</span>
-                                <div class="risk-bar">
-                                    <div id="risk1630"></div>
-                                </div>
-                                <strong id="risk1630Value">0</strong>
-                            </div>
-
-                            <div class="risk-row">
-                                <span>31–60 Days</span>
-                                <div class="risk-bar">
-                                    <div id="risk3160"></div>
-                                </div>
-                                <strong id="risk3160Value">0</strong>
-                            </div>
-
-                            <div class="risk-row">
-                                <span>61–90 Days</span>
-                                <div class="risk-bar">
-                                    <div id="risk6190"></div>
-                                </div>
-                                <strong id="risk6190Value">0</strong>
-                            </div>
-
-                            <div class="risk-row">
-                                <span>90+ Days</span>
-                                <div class="risk-bar">
-                                    <div id="risk90"></div>
-                                </div>
-                                <strong id="risk90Value">0</strong>
-                            </div>
-
-                            <div class="risk-row expired-row">
-                                <span>Expired</span>
-                                <div class="risk-bar">
-                                    <div id="riskExpired"></div>
-                                </div>
-                                <strong id="riskExpiredValue">0</strong>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- QUICK ACTIONS -->
-                    <div class="panel">
-
-                        <div class="panel-header">
-                            <div>
-                                <h2>Quick Actions</h2>
-                                <span>Common CCM operations</span>
-                            </div>
-                        </div>
-
-                        <div class="quick-actions">
-
-                            <button class="quick-action">
-                                <span>＋</span>
-                                <div>
-                                    <strong>Add Certification</strong>
-                                    <small>Create a new certification record</small>
-                                </div>
-                            </button>
-
-                            <button class="quick-action">
-                                <span>↻</span>
-                                <div>
-                                    <strong>Manage Renewals</strong>
-                                    <small>Review upcoming renewals</small>
-                                </div>
-                            </button>
-
-                            <button class="quick-action">
-                                <span>▤</span>
-                                <div>
-                                    <strong>Documents</strong>
-                                    <small>Access certificate documents</small>
-                                </div>
-                            </button>
-
-                            <button class="quick-action">
-                                <span>◫</span>
-                                <div>
-                                    <strong>Generate Report</strong>
-                                    <small>View compliance reports</small>
-                                </div>
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-               <!-- =========================================================
-     CERTIFICATION OVERVIEW — STEP 11E
-========================================================= -->
-
-<div class="panel certification-overview-panel">
-
-    <div class="panel-header">
-
-        <div>
-            <h2>Certification Overview</h2>
-
-            <span>
-                Live certification records
-            </span>
-        </div>
-
-        <div class="overview-actions">
-
-            <button
-                class="text-button"
-                id="refreshCertificatesButton"
-                type="button"
-            >
-                Refresh ↻
-            </button>
-
-            <button
-                class="text-button"
-                id="viewAllCertificatesButton"
-                type="button"
-            >
-                View All →
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- FILTER BAR -->
-
-    <div class="certificate-filter-bar">
-
-        <div class="certificate-search">
-
-            <input
-                type="search"
-                id="certificateSearch"
-                placeholder="Search certificate, employee or certification..."
-                autocomplete="off"
-            >
-
-        </div>
-
-
-        <select
-            id="certificateStatusFilter"
-        >
-
-            <option value="">
-                All Status
-            </option>
-
-            <option value="ACTIVE">
-                Active
-            </option>
-
-            <option value="EXPIRED">
-                Expired
-            </option>
-
-        </select>
-
-
-        <select
-            id="certificateDepartmentFilter"
-        >
-
-            <option value="">
-                All Departments
-            </option>
-
-        </select>
-
-    </div>
-
-
-    <!-- RECORD COUNT -->
-
-    <div
-        class="certificate-result-summary"
-        id="certificateResultSummary"
-    >
-        Loading certification records...
-    </div>
-
-
-    <!-- TABLE -->
-
-    <div class="certificate-table-wrapper">
-
-        <table class="certificate-table">
-
-            <thead>
-
-                <tr>
-
-                    <th>
-                        Certificate
-                    </th>
-
-                    <th>
-                        Employee
-                    </th>
-
-                    <th>
-                        Certification
-                    </th>
-
-                    <th>
-                        Department
-                    </th>
-
-                    <th>
-                        Issue Date
-                    </th>
-
-                    <th>
-                        Expiry Date
-                    </th>
-
-                    <th>
-                        Status
-                    </th>
-
-                    <th>
-                        Renewal
-                    </th>
-
-                    <th>
-                        Action
-                    </th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody
-                id="certificateTableBody"
-            >
-
-                <tr>
-
-                    <td
-                        colspan="9"
-                        class="table-loading"
-                    >
-                        Loading certification records...
-                    </td>
-
-                </tr>
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-</div>
-
-            <!-- OTHER PAGES -->
-            <div class="page" id="certificationsPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">MASTER DATA</span>
-                        <h1>Certifications</h1>
-                        <p>Manage and review certification records.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">▣</div>
-                    <h3>Certification Management</h3>
-                    <p>Certification table will be connected in the next step.</p>
                 </div>
             </div>
-
-
-            <div class="page" id="employeesPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">MASTER DATA</span>
-                        <h1>Employees</h1>
-                        <p>Employee certification profiles and compliance.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">♙</div>
-                    <h3>Employee Management</h3>
-                    <p>Employee 360° will be connected in the next step.</p>
-                </div>
-            </div>
-
-
-            <div class="page" id="renewalsPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">COMPLIANCE CONTROL</span>
-                        <h1>Renewals</h1>
-                        <p>Monitor certification expiry and renewal actions.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">↻</div>
-                    <h3>Renewal Management</h3>
-                    <p>Renewal workflow will be connected in the next step.</p>
-                </div>
-            </div>
-
-
-            <div class="page" id="documentsPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">DOCUMENT CONTROL</span>
-                        <h1>Documents</h1>
-                        <p>Controlled access to certification documents.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">▤</div>
-                    <h3>Document Management</h3>
-                    <p>Document access will be connected in the next step.</p>
-                </div>
-            </div>
-
-
-            <div class="page" id="reportsPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">ANALYTICS</span>
-                        <h1>Reports</h1>
-                        <p>Certification and compliance reporting.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">◫</div>
-                    <h3>Reports Centre</h3>
-                    <p>Charts and analytical reports will be connected later.</p>
-                </div>
-            </div>
-
-
-            <div class="page" id="auditPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">GOVERNANCE</span>
-                        <h1>Audit Trail</h1>
-                        <p>System activity and controlled actions.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">◉</div>
-                    <h3>Audit Trail</h3>
-                    <p>Audit records will be displayed here.</p>
-                </div>
-            </div>
-
-
-            <div class="page" id="settingsPage">
-                <div class="page-heading">
-                    <div>
-                        <span class="eyebrow">SYSTEM</span>
-                        <h1>Settings</h1>
-                        <p>CCM configuration and administration.</p>
-                    </div>
-                </div>
-
-                <div class="panel placeholder-panel">
-                    <div class="empty-icon">⚙</div>
-                    <h3>System Settings</h3>
-                    <p>Administrative controls will be connected later.</p>
-                </div>
-            </div>
-
         </section>
-
 
         <footer class="footer">
             <span>Gaerish Logistics Pvt Ltd</span>
@@ -713,10 +169,8 @@
         </footer>
 
     </main>
-
 </div>
 
-<script src="app.js"></script>
-
+<script src="./app.js"></script>
 </body>
 </html>
