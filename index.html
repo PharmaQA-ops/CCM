@@ -6,6 +6,93 @@
     <title>Central Certification Manager</title>
     <link rel="stylesheet" href="./style.css?v=12.0.1">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+
+    <style>
+        .ccm-login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            margin-top: 18px;
+        }
+
+        .ccm-login-field {
+            width: 100%;
+        }
+
+        .ccm-login-field label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #27364a;
+            text-align: left;
+        }
+
+        .ccm-login-field input {
+            box-sizing: border-box;
+            width: 100%;
+            height: 46px;
+            padding: 0 13px;
+            border: 1px solid #d5dce5;
+            border-radius: 9px;
+            background: #fff;
+            color: #17212f;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .ccm-login-field input:focus {
+            border-color: #245b7a;
+            box-shadow: 0 0 0 3px rgba(36, 91, 122, .10);
+        }
+
+        .ccm-password-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .ccm-password-wrap input {
+            padding-right: 62px;
+        }
+
+        .ccm-password-toggle {
+            position: absolute;
+            right: 7px;
+            border: 0;
+            background: transparent;
+            color: #245b7a;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .ccm-login-button {
+            width: 100%;
+            height: 46px;
+            border: 0;
+            border-radius: 9px;
+            background: #17365d;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 2px;
+        }
+
+        .ccm-login-button:hover {
+            background: #214a78;
+        }
+
+        .ccm-login-button:disabled {
+            opacity: .65;
+            cursor: wait;
+        }
+    </style>
+
 </head>
 
 <body>
@@ -28,7 +115,48 @@
             <p>Certification, renewal, document and compliance management.</p>
         </div>
 
-        <div id="googleLogin" class="google-login"></div>
+        <form id="ccmLoginForm" class="ccm-login-form" autocomplete="on">
+            <div class="ccm-login-field">
+                <label for="ccmLoginEmail">User ID / Email</label>
+                <input
+                    id="ccmLoginEmail"
+                    name="email"
+                    type="email"
+                    inputmode="email"
+                    autocomplete="username"
+                    placeholder="name@gaerishlogistics.com"
+                    required
+                >
+            </div>
+
+            <div class="ccm-login-field">
+                <label for="ccmLoginPassword">Password</label>
+                <div class="ccm-password-wrap">
+                    <input
+                        id="ccmLoginPassword"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        placeholder="Enter your password"
+                        required
+                    >
+                    <button
+                        type="button"
+                        class="ccm-password-toggle"
+                        id="ccmPasswordToggle"
+                        aria-label="Show password"
+                    >Show</button>
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                id="ccmLoginButton"
+                class="ccm-login-button"
+            >Sign In</button>
+        </form>
+
+        <div id="googleLogin" class="google-login" style="display:none"></div>
         <div id="loginStatus" class="login-status" aria-live="polite"></div>
 
         <div class="login-footer">
@@ -457,6 +585,35 @@
     </main>
 </div>
 
-<script src="./app.js?v=12.0.0"></script>
+
+
+<script>
+(function () {
+    function initCCMPasswordToggle() {
+        const input = document.getElementById("ccmLoginPassword");
+        const toggle = document.getElementById("ccmPasswordToggle");
+
+        if (!input || !toggle) return;
+
+        toggle.addEventListener("click", function () {
+            const showing = input.type === "text";
+            input.type = showing ? "password" : "text";
+            toggle.textContent = showing ? "Show" : "Hide";
+            toggle.setAttribute(
+                "aria-label",
+                showing ? "Show password" : "Hide password"
+            );
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initCCMPasswordToggle);
+    } else {
+        initCCMPasswordToggle();
+    }
+})();
+</script>
+
+<script src="./app.js?v=12.0.1"></script>
 </body>
 </html>
