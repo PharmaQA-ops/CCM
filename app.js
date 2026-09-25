@@ -3197,58 +3197,84 @@ async function openAddCertificateModal_() {
             <div class="ccm-form-grid">
 
                 <label>
-                    Employee
+                    Certification Scope
                     <select
-                        name="Employee_ID"
-                        id="certificateEmployeeSelect"
-                        required
+                        name="Certification_Scope"
+                        id="certificateScope"
                     >
-                        <option value="">
-                            Select employee
+                        <option value="COMPANY">
+                            Company Level
                         </option>
-
-                        ${employees.map(e => `
-                            <option
-                                value="${escapeHtml(
-                                    e.Employee_ID
-                                )}"
-                            >
-                                ${escapeHtml(
-                                    e.Employee_ID +
-                                    " — " +
-                                    (e.Employee_Name || "")
-                                )}
-                            </option>
-                        `).join("")}
+                        <option value="EMPLOYEE">
+                            Employee Level
+                        </option>
                     </select>
+                    <small class="ccm-muted-block">
+                        Company level = organization-wide certification.
+                        Employee level = certification assigned to one employee.
+                    </small>
                 </label>
 
-                <label>
-                    Employee Name
-                    <input
-                        name="Employee_Name"
-                        id="certificateEmployeeName"
-                        readonly
-                    >
-                </label>
+                <div
+                    id="certificateEmployeeSection"
+                    class="ccm-form-wide"
+                    style="display:none;"
+                >
+                    <div class="ccm-form-grid">
+                        <label>
+                            Employee
+                            <select
+                                name="Employee_ID"
+                                id="certificateEmployeeSelect"
+                            >
+                                <option value="">
+                                    Select employee
+                                </option>
 
-                <label>
-                    Department
-                    <input
-                        name="Department"
-                        id="certificateDepartment"
-                        readonly
-                    >
-                </label>
+                                ${employees.map(e => `
+                                    <option
+                                        value="${escapeHtml(
+                                            e.Employee_ID
+                                        )}"
+                                    >
+                                        ${escapeHtml(
+                                            e.Employee_ID +
+                                            " — " +
+                                            (e.Employee_Name || "")
+                                        )}
+                                    </option>
+                                `).join("")}
+                            </select>
+                        </label>
 
-                <label>
-                    Designation
-                    <input
-                        name="Designation"
-                        id="certificateDesignation"
-                        readonly
-                    >
-                </label>
+                        <label>
+                            Employee Name
+                            <input
+                                name="Employee_Name"
+                                id="certificateEmployeeName"
+                                readonly
+                            >
+                        </label>
+
+                        <label>
+                            Department
+                            <input
+                                name="Department"
+                                id="certificateDepartment"
+                                readonly
+                            >
+                        </label>
+
+                        <label>
+                            Designation
+                            <input
+                                name="Designation"
+                                id="certificateDesignation"
+                                readonly
+                            >
+                        </label>
+                    </div>
+                </div>
 
                 <label>
                     Certification Name
@@ -3365,12 +3391,63 @@ async function openAddCertificateModal_() {
         `
     );
 
+    const scopeSelect =
+        document.getElementById(
+            "certificateScope"
+        );
+
+    const employeeSection =
+        document.getElementById(
+            "certificateEmployeeSection"
+        );
+
     const select =
         document.getElementById(
             "certificateEmployeeSelect"
         );
 
+    const employeeName =
+        document.getElementById(
+            "certificateEmployeeName"
+        );
+
+    const department =
+        document.getElementById(
+            "certificateDepartment"
+        );
+
+    const designation =
+        document.getElementById(
+            "certificateDesignation"
+        );
+
+    const updateScopeUi = () => {
+
+        const isEmployee =
+            String(
+                scopeSelect?.value || "COMPANY"
+            ).toUpperCase() === "EMPLOYEE";
+
+        if (employeeSection) {
+            employeeSection.style.display =
+                isEmployee ? "" : "none";
+        }
+
+        if (select) {
+            select.required =
+                isEmployee;
+        }
+
+        if (!isEmployee) {
+            if (select) select.value = "";
+            if (employeeName) employeeName.value = "";
+            if (department) department.value = "";
+            if (designation) designation.value = "";
+        }
+    };
+
     const fill = () => {
+
         const employee =
             employees.find(
                 x =>
@@ -3378,26 +3455,33 @@ async function openAddCertificateModal_() {
                     String(select?.value)
             );
 
-        document.getElementById(
-            "certificateEmployeeName"
-        ).value =
-            employee?.Employee_Name || "";
+        if (employeeName) {
+            employeeName.value =
+                employee?.Employee_Name || "";
+        }
 
-        document.getElementById(
-            "certificateDepartment"
-        ).value =
-            employee?.Department || "";
+        if (department) {
+            department.value =
+                employee?.Department || "";
+        }
 
-        document.getElementById(
-            "certificateDesignation"
-        ).value =
-            employee?.Designation || "";
+        if (designation) {
+            designation.value =
+                employee?.Designation || "";
+        }
     };
+
+    scopeSelect?.addEventListener(
+        "change",
+        updateScopeUi
+    );
 
     select?.addEventListener(
         "change",
         fill
     );
+
+    updateScopeUi();
 
     document
         .getElementById(
@@ -3819,9 +3903,21 @@ async function submitCertificateCreate_(event) {
 
     const data = Object.fromEntries(new FormData(form).entries());
 
-    if (!data.Employee_ID) {
-        if (status) status.textContent = "Please select an employee.";
+    const scope =
+        String(data.Certification_Scope || "EMPLOYEE")
+            .trim()
+            .toUpperCase();
+
+    if (scope === "EMPLOYEE" && !data.Employee_ID) {
+        if (status) status.textContent = "Please select an employee for an employee-level certification.";
         return;
+    }
+
+    if (scope === "COMPANY") {
+        data.Employee_ID = "";
+        data.Employee_Name = "";
+        data.Department = "";
+        data.Designation = "";
     }
 
     if (!data.Certification_Name) {
@@ -4560,6 +4656,10 @@ function initNavigation() {
                             Download PDF
                         </button>
 
+                        <button type="button" class="ccm-final-action secondary" id="ccmPreviewReport">
+                            Preview
+                        </button>
+
                         <button type="button" class="ccm-final-action secondary" id="ccmOpenSheet">
                             Open Google Sheet
                         </button>
@@ -4589,6 +4689,212 @@ function initNavigation() {
         const excelButton = document.getElementById('ccmGenerateExcel');
         const pdfButton = document.getElementById('ccmGeneratePdf');
         const sheetButton = document.getElementById('ccmOpenSheet');
+        const previewButton = document.getElementById('ccmPreviewReport');
+
+        async function previewSelectedReport_() {
+
+            const reportType =
+                typeSelect?.value || '';
+
+            if (!reportType) return;
+
+            if (previewButton) {
+                previewButton.disabled = true;
+                previewButton.textContent = 'Loading Preview…';
+            }
+
+            if (status) {
+                status.textContent =
+                    'Loading live report preview…';
+            }
+
+            try {
+
+                const result =
+                    await ccmSafeExecute_(
+                        'reportPreview',
+                        {
+                            reportType:
+                                reportType,
+                            options: {}
+                        }
+                    );
+
+                openCcmReportPreview_(
+                    result
+                );
+
+                if (status) {
+                    status.textContent =
+                        `${result.title || reportType} preview loaded. ` +
+                        `${result.recordCount ?? 0} records.`;
+                }
+
+            } catch (error) {
+
+                console.error(
+                    'CCM report preview failed:',
+                    error
+                );
+
+                if (status) {
+                    status.textContent =
+                        error?.message ||
+                        'Report preview failed.';
+                }
+
+            } finally {
+
+                if (previewButton) {
+                    previewButton.disabled = false;
+                    previewButton.textContent =
+                        'Preview';
+                }
+
+            }
+        }
+
+        previewButton?.addEventListener(
+            'click',
+            previewSelectedReport_
+        );
+
+        function openCcmReportPreview_(report) {
+
+            const headers =
+                Array.isArray(report?.headers)
+                    ? report.headers
+                    : [];
+
+            const rows =
+                Array.isArray(report?.rows)
+                    ? report.rows
+                    : [];
+
+            const esc =
+                value =>
+                    escapeHtml(
+                        value === null ||
+                        value === undefined
+                            ? ''
+                            : String(value)
+                    );
+
+            const headerHtml =
+                headers.map(
+                    h =>
+                        `<th>${esc(h)}</th>`
+                ).join('');
+
+            const bodyHtml =
+                rows.map(
+                    row => {
+
+                        const cells =
+                            Array.isArray(row)
+                                ? row
+                                : headers.map(
+                                    h =>
+                                        row?.[h]
+                                );
+
+                        return `
+                            <tr>
+                                ${headers.map(
+                                    (_, i) =>
+                                        `<td>${esc(cells[i])}</td>`
+                                ).join('')}
+                            </tr>
+                        `;
+
+                    }
+                ).join('');
+
+            const win =
+                window.open(
+                    '',
+                    '_blank',
+                    'noopener,noreferrer,width=1400,height=850'
+                );
+
+            if (!win) {
+                ccmNotify_(
+                    'Please allow pop-ups to preview reports.',
+                    'error'
+                );
+                return;
+            }
+
+            win.document.write(`
+                <!doctype html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>${esc(report?.title || 'CCM Report Preview')}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 24px;
+                            color: #1b2b3a;
+                            background: #fff;
+                        }
+                        h1 {
+                            margin: 0 0 6px;
+                            font-size: 22px;
+                        }
+                        .meta {
+                            color: #65717d;
+                            margin-bottom: 18px;
+                            font-size: 12px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 11px;
+                        }
+                        th, td {
+                            border: 1px solid #d8dee5;
+                            padding: 7px 8px;
+                            text-align: left;
+                            vertical-align: top;
+                        }
+                        th {
+                            background: #17365d;
+                            color: white;
+                            position: sticky;
+                            top: 0;
+                        }
+                        tr:nth-child(even) {
+                            background: #f7f9fb;
+                        }
+                        .empty {
+                            padding: 30px;
+                            text-align: center;
+                            color: #777;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${esc(report?.title || 'CCM Report Preview')}</h1>
+                    <div class="meta">
+                        ${esc(report?.recordCount ?? rows.length)} records
+                        · Preview generated ${esc(report?.generatedAt || '')}
+                    </div>
+                    ${
+                        rows.length
+                            ? `<table>
+                                <thead><tr>${headerHtml}</tr></thead>
+                                <tbody>${bodyHtml}</tbody>
+                               </table>`
+                            : `<div class="empty">No records found.</div>`
+                    }
+                </body>
+                </html>
+            `);
+
+            win.document.close();
+        }
+
 
         async function generateSelectedReport_(format) {
             const reportType = typeSelect?.value || '';
