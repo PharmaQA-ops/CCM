@@ -3317,6 +3317,16 @@ async function openAddCertificateModal_() {
                     >
                 </label>
 
+                <label>
+                    Certificate Document
+                    <input
+                        id="certificateDocumentFile"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    >
+                    <small class="ccm-muted-block">Optional. Maximum 10 MB.</small>
+                </label>
+
                 <label class="ccm-form-wide">
                     Remarks
                     <textarea
@@ -3775,6 +3785,29 @@ function openCCMApplication() {
    CCM — CERTIFICATION CREATE SUBMIT
 ========================================================= */
 
+function readCcmFileAsBase64_(file) {
+    return new Promise((resolve, reject) => {
+        if (!file) { resolve(null); return; }
+        if (file.size > 10 * 1024 * 1024) {
+            reject(new Error("Certificate document must be 10 MB or smaller."));
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = String(reader.result || "");
+            const comma = result.indexOf(",");
+            resolve({
+                fileName: file.name,
+                mimeType: file.type || "application/octet-stream",
+                base64: comma >= 0 ? result.slice(comma + 1) : result
+            });
+        };
+        reader.onerror = () => reject(new Error("Unable to read the certificate document."));
+        reader.readAsDataURL(file);
+    });
+}
+
+
 async function submitCertificateCreate_(event) {
     event.preventDefault();
 
@@ -3820,9 +3853,29 @@ async function submitCertificateCreate_(event) {
             throw new Error(result?.error || "Certification could not be created.");
         }
 
+        const fileInput = document.getElementById("certificateDocumentFile");
+        const selectedFile = fileInput?.files?.[0] || null;
+
+        if (selectedFile) {
+            if (status) status.textContent = "Uploading certificate document…";
+            const upload = await readCcmFileAsBase64_(selectedFile);
+            const uploadResult = await ccmSafeExecute_("uploadDocument", {
+                certificateId: result.certificateId,
+                fileName: upload.fileName,
+                mimeType: upload.mimeType,
+                base64: upload.base64,
+                classification: "INTERNAL"
+            });
+            if (!uploadResult || uploadResult.success !== true) {
+                throw new Error(uploadResult?.message || uploadResult?.error || "Certificate was created, but document upload failed.");
+            }
+        }
+
         ccmCloseModal_("certificateFormModal");
         ccmNotify_(
-            `Certification ${result.certificateId || ""} created successfully.`,
+            selectedFile
+                ? `Certification ${result.certificateId || ""} and document uploaded successfully.`
+                : `Certification ${result.certificateId || ""} created successfully.`,
             "success"
         );
 
