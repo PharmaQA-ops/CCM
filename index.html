@@ -90,6 +90,27 @@
             opacity: .65;
             cursor: wait;
         }
+
+        .ccm-forgot-button {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            border: 0;
+            background: transparent;
+            color: #245b7a;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 7px;
+        }
+
+        .ccm-forgot-button:hover {
+            text-decoration: underline;
+        }
+
+        .ccm-reset-panel {
+            width: 100%;
+        }
     </style>
 
 </head>
@@ -114,6 +135,7 @@
             <p>Manage certifications, renewals, documents and compliance.</p>
         </div>
 
+        <div id="ccmLoginPanel">
         <form id="ccmLoginForm" class="ccm-login-form" autocomplete="on">
             <div class="ccm-login-field">
                 <label for="ccmLoginEmail">User ID / Email</label>
@@ -155,7 +177,34 @@
             >Sign In</button>
         </form>
 
-        <div id="googleLogin" class="google-login" style="display:none"></div>
+        <button type="button" id="ccmForgotPassword" class="ccm-forgot-button">Forgot Password?</button>
+        </div>
+
+        <div id="ccmResetPanel" class="ccm-reset-panel" style="display:none">
+            <div class="ccm-login-field">
+                <label for="ccmResetEmail">Registered Email</label>
+                <input id="ccmResetEmail" type="email" autocomplete="email" placeholder="name@gaerishlogistics.com">
+            </div>
+
+            <button type="button" id="ccmRequestOtpButton" class="ccm-login-button">Send OTP</button>
+
+            <div id="ccmOtpStep" style="display:none; margin-top:14px">
+                <div class="ccm-login-field">
+                    <label for="ccmResetOtp">6-Digit OTP</label>
+                    <input id="ccmResetOtp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Enter OTP">
+                </div>
+
+                <div class="ccm-login-field">
+                    <label for="ccmResetNewPassword">New Password</label>
+                    <input id="ccmResetNewPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters">
+                </div>
+
+                <button type="button" id="ccmVerifyOtpButton" class="ccm-login-button">Reset Password</button>
+            </div>
+
+            <button type="button" id="ccmResetBackButton" class="ccm-forgot-button">Back to Sign In</button>
+        </div>
+
         <div id="loginStatus" class="login-status" aria-live="polite"></div>
 
         <div class="login-footer">
@@ -554,7 +603,7 @@
             <div class="settings-list">
                 <div class="settings-row"><strong>Application</strong><span>Central Certification Manager</span></div>
                 <div class="settings-row"><strong>Environment</strong><span>Production</span></div>
-                <div class="settings-row"><strong>Authentication</strong><span>Google Workspace OAuth</span></div>
+                <div class="settings-row"><strong>Authentication</strong><span>Email + Password + OTP Reset</span></div>
                 <div class="settings-row"><strong>Authorization</strong><span>Backend RBAC</span></div>
                 <div class="settings-row"><strong>Data Store</strong><span>Google Sheets</span></div>
                 <div class="settings-row"><strong>Documents</strong><span>Google Drive</span></div>
