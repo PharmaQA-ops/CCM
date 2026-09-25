@@ -4670,6 +4670,12 @@ function initNavigation() {
                     <div id="ccmReportStatus" class="ccm-report-status">
                         Select a report and generate the required output.
                     </div>
+
+                    <div class="ccm-report-status" style="margin-top:10px;border-left:3px solid #173F5F;">
+                        <strong>Controlled distribution:</strong> Generated XLSX/PDF reports are configured as
+                        <strong>Anyone with the link — View / Download</strong>. The CCM master database and
+                        controlled source documents remain protected by CCM access control.
+                    </div>
                 </div>
 
                 <div class="ccm-final-grid">
@@ -4941,22 +4947,33 @@ function initNavigation() {
                             ? result?.pdf
                             : result?.spreadsheet;
 
-                if (!target?.url) {
+                const targetUrl =
+                    format === 'xlsx' || format === 'pdf'
+                        ? (target?.downloadUrl || target?.url)
+                        : target?.url;
+
+                if (!targetUrl) {
                     throw new Error(
                         'The selected report did not return a download URL.'
                     );
                 }
 
                 window.open(
-                    target.url,
+                    targetUrl,
                     '_blank',
                     'noopener,noreferrer'
                 );
 
                 if (status) {
+                    const accessText =
+                        result?.publicAccess
+                            ? ' Anyone with the link can view/download the report.'
+                            : ' Public link access was not confirmed; check Drive sharing policy.';
+
                     status.textContent =
                         `${result.title || reportType} generated successfully. ` +
-                        `${result.recordCount ?? 0} records.`;
+                        `${result.recordCount ?? 0} records.` +
+                        accessText;
                 }
             } catch (error) {
                 console.error(
