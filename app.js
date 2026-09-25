@@ -4598,7 +4598,9 @@ function initNavigation() {
                 {id:'NOTIFICATION_HISTORY',name:'Notification History Report'},
                 {id:'AUDIT_TRAIL',name:'Audit Trail Report'},
                 {id:'CERTIFICATION_GAP',name:'Certification Gap Report'},
-                {id:'MANAGEMENT_SUMMARY',name:'Management Summary'}
+                {id:'IMPORT_EXPORT_AUTHORIZATION',name:'Import / Export Authorization Register'},
+                {id:'MANAGEMENT_SUMMARY',name:'Management Summary'},
+                {id:'COMPLIANCE_AUDIT_PACK',name:'Compliance & Audit Submission Pack'}
             ];
 
         const list = (obj) => {
