@@ -106,13 +106,13 @@
 
         <div class="login-brand">
             <h1>Gaerish Logistics</h1>
-            <span>Central Certification Manager</span>
+            <span>CCM</span>
         </div>
 
         <div class="login-copy">
             <span class="eyebrow">SECURE WORKSPACE</span>
-            <h2>Central Certification Manager</h2>
-            <p>Certification, renewal, document and compliance management.</p>
+            <h2>Sign in to CCM</h2>
+            <p>Manage certifications, renewals, documents and compliance.</p>
         </div>
 
         <form id="ccmLoginForm" class="ccm-login-form" autocomplete="on">
@@ -610,6 +610,18 @@
         document.addEventListener("DOMContentLoaded", initCCMPasswordToggle);
     } else {
         initCCMPasswordToggle();
+    }
+})();
+</script>
+
+<script>
+(function () {
+    try {
+        if (window.location.search || window.location.hash) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    } catch (error) {
+        console.warn("CCM: URL cleanup skipped.", error);
     }
 })();
 </script>
