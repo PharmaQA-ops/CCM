@@ -1,7 +1,9 @@
-/* CCM 12.0 — EMAIL/PASSWORD AUTH */
-const CCM_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzpJ6vSFQvZXLVxOEpLFuIpB8oQnegtHpKJaSWZll0gQkX6K5FjFAt4W3ugbRYjQOafw/exec";
+/* CCM 1.0 — EMAIL/PASSWORD AUTH */
+const CCM_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwur7Tv2emj0rhdvDq2BKTaoOR6U9_OIpBYx5po8LkV_gM8ZLJi8bNYg1dXWnFM4asPzw/exec";
 let CCM_SESSION_TOKEN = null;
-document.addEventListener("DOMContentLoaded",()=>{
+let CCM_RESET_EMAIL = "";
+
+document.addEventListener("DOMContentLoaded", () => {
     try {
         if (window.location.search || window.location.hash) {
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -9,14 +11,380 @@ document.addEventListener("DOMContentLoaded",()=>{
     } catch (error) {
         console.warn("CCM: URL cleanup skipped.", error);
     }
+
     initializeEmailPasswordLogin();
+    initializePasswordReset();
 });
-function initializeEmailPasswordLogin(){const form=document.getElementById("ccmLoginForm");if(!form)return;form.addEventListener("submit",async e=>{e.preventDefault();const email=String(document.getElementById("ccmLoginEmail")?.value||"").trim().toLowerCase();const password=String(document.getElementById("ccmLoginPassword")?.value||"");const btn=document.getElementById("ccmLoginButton");if(!email||!password){showLoginError("Email and password are required.");return;}if(btn){btn.disabled=true;btn.textContent="Signing in…";}showLoginConnecting();try{const result=await ccmPublicPost_("passwordLogin",{email,password});if(!result?.success||!result?.sessionToken)throw new Error(result?.message||result?.error||"Invalid email or password.");CCM_SESSION_TOKEN=result.sessionToken;window.CCM_CURRENT_USER=result.user||null;window.CCM_PERMISSIONS=result.permissions||[];showLoginSuccess(result.user);}catch(err){console.error("CCM login failed:",err);showLoginError(err?.message||"Unable to sign in.");}finally{if(btn){btn.disabled=false;btn.textContent="Sign In";}}});}
-async function ccmPublicPost_(action,params={}){const response=await fetch(CCM_WEB_APP_URL,{method:"POST",mode:"cors",cache:"no-store",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...params})});const data=await response.json();if(!response.ok)throw new Error(data?.message||data?.error||"CCM backend request failed.");return data;}
-async function ccmExecute(action,params={}){if(!CCM_SESSION_TOKEN)throw new Error("CCM session has expired. Please sign in again.");const response=await fetch(CCM_WEB_APP_URL,{method:"POST",mode:"cors",cache:"no-store",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"ccmExecute",sessionToken:CCM_SESSION_TOKEN,targetAction:action,params:params||{}})});const data=await response.json();console.log("CCM API ["+action+"]:",data);if(!response.ok)throw new Error(data?.message||data?.error||"CCM API request failed.");if(!data?.success)throw new Error(data?.message||data?.error||"CCM request was rejected.");return data;}
-function showLoginConnecting(){const s=document.getElementById("loginStatus");if(s){s.className="login-status success";s.textContent="Verifying CCM access…";}}
-function showLoginSuccess(user){const s=document.getElementById("loginStatus");if(s){s.className="login-status success";s.textContent="Authentication successful. Loading dashboard…";}if(user){document.getElementById("userName")&&(document.getElementById("userName").textContent=user.Name||user.Email||"User");document.getElementById("userRole")&&(document.getElementById("userRole").textContent=user.Role_Name||user.Role_ID||"USER");document.getElementById("userAvatar")&&(document.getElementById("userAvatar").textContent=String(user.Name||user.Email||"U").charAt(0).toUpperCase());}setTimeout(()=>openCCMApplication(),250);}
-function showLoginError(message){const s=document.getElementById("loginStatus");if(!s)return;s.className="login-status error";s.textContent=message;}
+
+function initializeEmailPasswordLogin() {
+    const form = document.getElementById("ccmLoginForm");
+    if (!form || form.dataset.bound === "true") return;
+    form.dataset.bound = "true";
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = String(
+            document.getElementById("ccmLoginEmail")?.value || ""
+        ).trim().toLowerCase();
+
+        const password = String(
+            document.getElementById("ccmLoginPassword")?.value || ""
+        );
+
+        const btn = document.getElementById("ccmLoginButton");
+
+        if (!email || !password) {
+            showLoginError("Email and password are required.");
+            return;
+        }
+
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = "Signing in…";
+        }
+
+        showLoginConnecting();
+
+        try {
+            const result = await ccmPublicPost_("passwordLogin", {
+                email,
+                password
+            });
+
+            if (!result?.success || !result?.sessionToken) {
+                throw new Error(
+                    result?.message ||
+                    result?.error ||
+                    "Invalid email or password."
+                );
+            }
+
+            CCM_SESSION_TOKEN = result.sessionToken;
+            window.CCM_CURRENT_USER = result.user || null;
+            window.CCM_PERMISSIONS = result.permissions || [];
+
+            showLoginSuccess(result.user);
+
+        } catch (err) {
+            console.error("CCM login failed:", err);
+            showLoginError(
+                err?.message ||
+                "Unable to sign in."
+            );
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = "Sign In";
+            }
+        }
+    });
+}
+
+function initializePasswordReset() {
+    const forgotButton = document.getElementById("ccmForgotPassword");
+    const requestButton = document.getElementById("ccmRequestOtpButton");
+    const verifyButton = document.getElementById("ccmVerifyOtpButton");
+    const backButton = document.getElementById("ccmResetBackButton");
+
+    if (forgotButton && forgotButton.dataset.bound !== "true") {
+        forgotButton.dataset.bound = "true";
+        forgotButton.addEventListener("click", () => {
+            const loginPanel = document.getElementById("ccmLoginPanel");
+            const resetPanel = document.getElementById("ccmResetPanel");
+            const email = document.getElementById("ccmLoginEmail")?.value || "";
+
+            if (document.getElementById("ccmResetEmail")) {
+                document.getElementById("ccmResetEmail").value = email;
+            }
+
+            if (loginPanel) loginPanel.style.display = "none";
+            if (resetPanel) resetPanel.style.display = "block";
+            clearLoginStatus();
+        });
+    }
+
+    if (backButton && backButton.dataset.bound !== "true") {
+        backButton.dataset.bound = "true";
+        backButton.addEventListener("click", () => {
+            const loginPanel = document.getElementById("ccmLoginPanel");
+            const resetPanel = document.getElementById("ccmResetPanel");
+            if (resetPanel) resetPanel.style.display = "none";
+            if (loginPanel) loginPanel.style.display = "block";
+            clearLoginStatus();
+        });
+    }
+
+    if (requestButton && requestButton.dataset.bound !== "true") {
+        requestButton.dataset.bound = "true";
+        requestButton.addEventListener("click", async () => {
+            const email = String(
+                document.getElementById("ccmResetEmail")?.value || ""
+            ).trim().toLowerCase();
+
+            if (!email) {
+                showLoginError("Enter your registered email address.");
+                return;
+            }
+
+            requestButton.disabled = true;
+            requestButton.textContent = "Sending OTP…";
+            showLoginConnecting();
+
+            try {
+                const result = await ccmPublicPost_("forgotPassword", { email });
+
+                if (!result?.success) {
+                    throw new Error(
+                        result?.message ||
+                        result?.error ||
+                        "Unable to request OTP."
+                    );
+                }
+
+                CCM_RESET_EMAIL = email;
+
+                const otpStep = document.getElementById("ccmOtpStep");
+                if (otpStep) otpStep.style.display = "block";
+
+                requestButton.textContent = "OTP Sent";
+                showLoginSuccessMessage(
+                    "If the account exists, a password reset OTP has been sent to the registered email."
+                );
+
+            } catch (err) {
+                console.error("CCM OTP request failed:", err);
+                showLoginError(
+                    err?.message ||
+                    "Unable to send OTP."
+                );
+            } finally {
+                requestButton.disabled = false;
+                if (requestButton.textContent !== "OTP Sent") {
+                    requestButton.textContent = "Send OTP";
+                }
+            }
+        });
+    }
+
+    if (verifyButton && verifyButton.dataset.bound !== "true") {
+        verifyButton.dataset.bound = "true";
+        verifyButton.addEventListener("click", async () => {
+            const email = String(
+                document.getElementById("ccmResetEmail")?.value || CCM_RESET_EMAIL || ""
+            ).trim().toLowerCase();
+
+            const otp = String(
+                document.getElementById("ccmResetOtp")?.value || ""
+            ).trim();
+
+            const newPassword = String(
+                document.getElementById("ccmResetNewPassword")?.value || ""
+            );
+
+            if (!email || !otp || !newPassword) {
+                showLoginError("Email, OTP and new password are required.");
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showLoginError("New password must contain at least 8 characters.");
+                return;
+            }
+
+            verifyButton.disabled = true;
+            verifyButton.textContent = "Updating…";
+            showLoginConnecting();
+
+            try {
+                const result = await ccmPublicPost_("verifyOtp", {
+                    email,
+                    otp,
+                    newPassword
+                });
+
+                if (!result?.success) {
+                    throw new Error(
+                        result?.message ||
+                        result?.error ||
+                        "Password reset failed."
+                    );
+                }
+
+                CCM_RESET_EMAIL = email;
+
+                const loginPanel = document.getElementById("ccmLoginPanel");
+                const resetPanel = document.getElementById("ccmResetPanel");
+
+                if (resetPanel) resetPanel.style.display = "none";
+                if (loginPanel) loginPanel.style.display = "block";
+
+                const loginEmail = document.getElementById("ccmLoginEmail");
+                const loginPassword = document.getElementById("ccmLoginPassword");
+
+                if (loginEmail) loginEmail.value = email;
+                if (loginPassword) loginPassword.value = "";
+
+                const otpStep = document.getElementById("ccmOtpStep");
+                if (otpStep) otpStep.style.display = "none";
+
+                showLoginSuccessMessage(
+                    "Password reset successfully. Sign in with your new password."
+                );
+
+            } catch (err) {
+                console.error("CCM password reset failed:", err);
+                showLoginError(
+                    err?.message ||
+                    "Password reset failed."
+                );
+            } finally {
+                verifyButton.disabled = false;
+                verifyButton.textContent = "Reset Password";
+            }
+        });
+    }
+}
+
+async function ccmPublicPost_(action, params = {}) {
+    let response;
+
+    try {
+        response = await fetch(CCM_WEB_APP_URL, {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            redirect: "follow",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify({
+                action,
+                ...params
+            })
+        });
+    } catch (networkError) {
+        throw new Error(
+            "Unable to connect to the CCM server. Check the Apps Script Web App deployment and browser network access."
+        );
+    }
+
+    let data;
+
+    try {
+        data = await response.json();
+    } catch (parseError) {
+        throw new Error(
+            "CCM server returned an invalid response."
+        );
+    }
+
+    if (!response.ok) {
+        throw new Error(
+            data?.message ||
+            data?.error ||
+            "CCM backend request failed."
+        );
+    }
+
+    return data;
+}
+
+async function ccmExecute(action, params = {}) {
+    if (!CCM_SESSION_TOKEN) {
+        throw new Error(
+            "CCM session has expired. Please sign in again."
+        );
+    }
+
+    const data = await ccmPublicPost_("ccmExecute", {
+        sessionToken: CCM_SESSION_TOKEN,
+        targetAction: action,
+        params: params || {}
+    });
+
+    console.log("CCM API [" + action + "]:", data);
+
+    if (!data?.success) {
+        if (data?.error === "SESSION_EXPIRED") {
+            CCM_SESSION_TOKEN = null;
+            window.CCM_CURRENT_USER = null;
+            window.CCM_PERMISSIONS = [];
+            throw new Error("CCM session has expired. Please sign in again.");
+        }
+
+        throw new Error(
+            data?.message ||
+            data?.error ||
+            "CCM request was rejected."
+        );
+    }
+
+    return data;
+}
+
+function showLoginConnecting() {
+    const s = document.getElementById("loginStatus");
+    if (s) {
+        s.className = "login-status success";
+        s.textContent = "Verifying CCM access…";
+    }
+}
+
+function showLoginSuccessMessage(message) {
+    const s = document.getElementById("loginStatus");
+    if (s) {
+        s.className = "login-status success";
+        s.textContent = message;
+    }
+}
+
+function showLoginSuccess(user) {
+    const s = document.getElementById("loginStatus");
+
+    if (s) {
+        s.className = "login-status success";
+        s.textContent = "Authentication successful. Loading dashboard…";
+    }
+
+    if (user) {
+        const name =
+            user.fullName ||
+            user.Full_Name ||
+            user.email ||
+            user.Email ||
+            "User";
+
+        const role =
+            user.roleId ||
+            user.Role_ID ||
+            "USER";
+
+        const userName = document.getElementById("userName");
+        const userRole = document.getElementById("userRole");
+        const userAvatar = document.getElementById("userAvatar");
+
+        if (userName) userName.textContent = name;
+        if (userRole) userRole.textContent = role;
+        if (userAvatar) userAvatar.textContent = String(name).charAt(0).toUpperCase();
+    }
+
+    setTimeout(() => openCCMApplication(), 250);
+}
+
+function showLoginError(message) {
+    const s = document.getElementById("loginStatus");
+    if (!s) return;
+    s.className = "login-status error";
+    s.textContent = message;
+}
+
+function clearLoginStatus() {
+    const s = document.getElementById("loginStatus");
+    if (!s) return;
+    s.className = "login-status";
+    s.textContent = "";
+}
 
 /* =========================================================
    LOAD LIVE DASHBOARD
@@ -1691,37 +2059,6 @@ function openCCMApplication() {
 
 
     openAuthorizedDefaultPage_();
-
-}
-
-
-/* =========================================================
-   LOGIN ERROR
-========================================================= */
-
-function showLoginError(
-    message
-) {
-
-    const status =
-        document.getElementById(
-            "loginStatus"
-        );
-
-
-    if (!status) {
-
-        return;
-
-    }
-
-
-    status.className =
-        "login-status error";
-
-
-    status.textContent =
-        message;
 
 }
 
